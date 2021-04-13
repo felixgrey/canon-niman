@@ -20,7 +20,9 @@
   },
   "homepage": "https://github.com/felixgrey/canon-niman#readme",
   "dependencies": {
-    "axios": "^0.21.1"
+    "axios": "^0.21.1",
+    "echarts": "^5.0.2",
+    "echarts-for-react": "^3.0.1"
   },
   "devDependencies": {
     "node-testing-server": "^1.5.1"

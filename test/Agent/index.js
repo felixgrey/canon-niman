@@ -1,4 +1,4 @@
-const {Agent} = require('./../../src/Agent');
+const Agent = require('./../../src/Agent');
 
 // console.log(Agent)
 

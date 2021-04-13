@@ -3,14 +3,9 @@ function isNvl(v) {
 }
 
 function proxyAble(v) {
-  if (isNvl(v)) {
-    return false;
-  }
-
-  if (typeof v === 'object' || typeof v === 'function') {
+  if (!isNvl(v) && /^object$|^function$/.test(typeof v)) {
     return true;
   }
-
   return false;
 }
 
@@ -18,7 +13,6 @@ function isDiff(a, b) {
   if (Number.isNaN(a) || Number.isNaN(b)) {
     return !(Number.isNaN(a) && Number.isNaN(b));
   }
-
   return a !== b;
 }
 
@@ -45,12 +39,12 @@ class Handle {
   setterHandle = Function.prototype;
 }
 
-function createProxy(target, param = {}) {
+function createProxy(target, param = {}, state = {}) {
   if (!proxyAble(target)) {
     return target;
   }
 
-  const {
+  let {
     path = [],
       handle = null,
   } = param;
@@ -61,6 +55,10 @@ function createProxy(target, param = {}) {
 
   return new Proxy(target, {
     get: function(obj, field) {
+      if (state.destroyed) {
+        return;
+      }
+
       const value = Reflect.get(obj, field, obj);
 
       if (isNotProxy(field)) {
@@ -76,9 +74,14 @@ function createProxy(target, param = {}) {
       return createProxy(value, {
         path: path.concat(field),
         handle,
-      });
+
+      }, state);
     },
     set: function(obj, field, newValue) {
+      if (state.locked || state.destroyed) {
+        return true;
+      }
+
       if (isNotProxy(field)) {
         return Reflect.set(obj, field, newValue, obj);
       }
@@ -118,6 +121,7 @@ class Agent {
 
   constructor(data = {}) {
     this.data = data;
+    this.state = {};
     const handle = this.handle = new Handle({
       $pure: () => this.data,
       $manager: () => this,
@@ -125,13 +129,16 @@ class Agent {
       $listen: () => this.listenHandle,
       $destroy: () => this.destroy,
       $onDestroy: () => this.destroyHandle,
+      $lock: () => this.lock,
+      $isLocked: () => this.isLocked,
+
       $onGet: (info) => (this.onGet && this.onGet(info)),
       $onSet: (info) => this.changeHandle(info),
     });
 
     return this.proxy = createProxy(data, {
       handle
-    });
+    }, this.state);
   }
 
   watchMap = new Map();
@@ -142,6 +149,20 @@ class Agent {
   changing = 0;
   destroyed = false;
   maxCascade = 10;
+
+  lock = (flag) => {
+    if (this.destroyed) {
+      return;
+    }
+    this.state.locked = !!flag;
+  }
+
+  isLocked = () => {
+    if (this.destroyed) {
+      return;
+    }
+    return this.state.locked;
+  }
 
   onWatch = (handles, initRun = false) => {
     if (this.destroyed) {
@@ -166,6 +187,7 @@ class Agent {
         callback(value, {
           init: true,
           data: this.data,
+          agent: this,
         });
       }
     }
@@ -192,6 +214,7 @@ class Agent {
         ...info,
         data: this.data,
         init: false,
+        agent: this,
         history: [...this.history],
         observeType: 'watch',
       };
@@ -204,6 +227,7 @@ class Agent {
         ...info,
         data: this.data,
         init: false,
+        agent: this,
         history: [...this.history],
         observeType: 'listen',
       };
@@ -259,4 +283,5 @@ class Agent {
   }
 }
 
-exports.Agent = Agent;
+export default Agent;
+// module.exports = Agent;
