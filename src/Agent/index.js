@@ -39,6 +39,10 @@ class Handle {
   setterHandle = Function.prototype;
 }
 
+if (!Proxy.prototype.$sync) {
+  Proxy.prototype.$sync = Function.prototype;
+}
+
 function createProxy(target, param = {}, state = {}) {
   if (!proxyAble(target)) {
     return target;
@@ -55,7 +59,7 @@ function createProxy(target, param = {}, state = {}) {
 
   return new Proxy(target, {
     get: function(obj, field) {
-      if (state.destroyed) {
+      if (state.$destroyed) {
         return;
       }
 
@@ -78,7 +82,7 @@ function createProxy(target, param = {}, state = {}) {
       }, state);
     },
     set: function(obj, field, newValue) {
-      if (state.locked || state.destroyed) {
+      if (state.$locked || state.$destroyed) {
         return true;
       }
 
@@ -119,10 +123,12 @@ function getDeepValue(obj, paths) {
 
 class Agent {
 
-  constructor(data = {}) {
+  constructor(data = {}, mixHandle = {}) {
     this.data = data;
     this.state = {};
+
     const handle = this.handle = new Handle({
+      ...mixHandle,
       $pure: () => this.data,
       $manager: () => this,
       $watch: () => this.onWatch,
@@ -154,14 +160,14 @@ class Agent {
     if (this.destroyed) {
       return;
     }
-    this.state.locked = !!flag;
+    this.state.$locked = !!flag;
   }
 
   isLocked = () => {
     if (this.destroyed) {
       return;
     }
-    return this.state.locked;
+    return this.state.$locked;
   }
 
   onWatch = (handles, initRun = false) => {
@@ -265,6 +271,7 @@ class Agent {
       return;
     }
     this.destroyed = true;
+    this.state.$destroyed = true;
 
     Array.from(this.destroySet.values()).forEach(f => f());
 
@@ -280,6 +287,7 @@ class Agent {
 
     this.handle = null;
     this.proxy = null;
+    this.state = null;
   }
 }
 

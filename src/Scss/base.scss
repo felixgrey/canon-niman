@@ -1,0 +1,255 @@
+
+// 样式前缀
+$app-prefix: ls-;
+
+// 不可用组件背景色
+$disabled-color: grey;
+
+// 边框基本样式
+$border-style: solid 1px;
+
+// 常用尺寸（文字等）
+$size-list:  12,16,20,24,28,32,36,40;
+
+// 常用元素
+$element-list: div,span,label;
+
+// 栅格布局、瓦片布局分割粒度
+$max-cells: 24; // 分割成24份
+
+/************************************************/
+
+#{$element-list}{
+  box-sizing: border-box;
+}
+
+/*
+  栅格系统
+*/
+.#{$app-prefix}row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: left;
+  align-items: baseline;
+
+  &.#{$app-prefix}left{
+    justify-content: left;
+  }
+  &.#{$app-prefix}right {
+    justify-content: right;
+  }
+  &.#{$app-prefix}between {
+    justify-content: space-between;
+  }
+  &.#{$app-prefix}around {
+    justify-content: space-around;
+  }
+
+  @for $col from 1 through $max-cells {
+    &.#{$app-prefix}cols-#{$col} {
+      @each $element in $element-list {
+        &>#{$element}{
+          width: 100% / $col;
+          @for $span from 1 through $col {
+            &.#{$app-prefix}col-span-#{$span} {
+              width: 100% * $span / $col;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/*
+  瓦片布局
+*/
+.#{$app-prefix}tile-grid {
+  position: relative;
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  @each $element in $element-list {
+    &>#{$element}{
+      position: absolute;
+      display: inline-block;
+    }
+  }
+
+  @for $rows from 1 through $max-cells {
+    &.#{$app-prefix}rows-#{$rows} {
+      @each $element in $element-list {
+        &>#{$element}{
+          height: 100% / $rows;
+          @for $row-span from 1 through $rows{
+            &.#{$app-prefix}-top-#{$row-span}{
+              top: 100% * $row-span / $rows;
+            }
+            &.#{$app-prefix}row-span-#{$row-span}{
+              height: 100% * $row-span / $rows;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @for $cols from 1 through $max-cells {
+    &.#{$app-prefix}cols-#{$cols} {
+      @each $element in $element-list {
+        &>#{$element}{
+          width: 100% / $cols;
+          @for $col-span from 1 through $cols{
+            &.#{$app-prefix}-left-#{$col-span}{
+              left: 100% * $col-span / $cols;
+            }
+            &.#{$app-prefix}col-span-#{$col-span}{
+              width: 100% * $col-span / $cols;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/*
+  一些工具
+*/
+.#{$app-prefix}text-left{
+  text-align: left;
+}
+.#{$app-prefix}text-right{
+  text-align: right;
+}
+.#{$app-prefix}text-center{
+  text-align: center;
+}
+.#{$app-prefix}float-left{
+  float: left;
+}
+.#{$app-prefix}float-right{
+  float: right;
+}
+.#{$app-prefix}child-middle{
+  &::before{
+    content: "";
+    height: 100%;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  @each $element in $element-list {
+    &>#{$element},
+    &>.#{$app-prefix}middle,
+    &>#{$element}.#{$app-prefix}middle{
+      display: inline-block;
+      vertical-align: middle;
+    }
+  }
+}
+.#{$app-prefix}bfc{
+  &::after{
+    content: "";
+    display: block;
+    clear: both;
+  }
+}
+
+/*
+  check图标
+*/
+.#{$app-prefix}icon-check{
+  text-align: center;
+  border: solid 1px;
+  display: inline-block;
+  margin: 2px;
+
+  line-height: 16px;
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+
+  &.#{$app-prefix}cycle{
+    border-radius: 50%;
+  }
+
+  &::before {
+    content: "";
+    display: inline-block;
+  }
+
+  &.checked {
+    &::before {
+      content: "√";
+      display: inline-block;
+    }
+  }
+
+  &[disabled],
+  &.disabled {
+    color: $disabled-color;
+  }
+
+  @each $size in $size-list {
+    &.#{$app-prefix}size-#{$size} {
+      line-height: #{$size}px;
+      font-size: #{$size}px;
+      height: #{$size}px;
+      width: #{$size}px;
+    }
+  }
+}
+
+/*
+  表格
+*/
+table.#{$app-prefix}table{
+  width: 100%;
+  text-align: left;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-top: $border-style;
+  border-left: $border-style;
+  border-radius: 0;
+
+  @mixin td-common {
+    border-right: $border-style;
+    border-bottom: $border-style;
+    border-radius: 0;
+
+    height: 36px;
+    padding: 0 4px;
+  }
+
+  >thead{
+    >tr{
+      >th{
+        @include td-common;
+        text-align: center;
+      }
+    }
+  }
+
+  >tbody{
+    >tr{
+      >td{
+        @include td-common;
+      }
+    }
+  }
+
+  @each $size in $size-list {
+    &.#{$app-prefix}size-#{$size} {
+      >thead>th>td,
+      >tbody>tr>td,
+      tr>td{
+        height: #{$size + 20}px;
+        font-size: #{$size}px;
+      }
+    }
+  }
+}
