@@ -1,5 +1,6 @@
 const modelMap = {};
 const modelDestroyMap = {};
+const hasProxyed = Symbol('hasProxyed');
 
 function destroyModel(name) {
   modelDestroyMap[name] && modelDestroyMap[name](modelMap[name]);
@@ -30,12 +31,13 @@ function createModel(config = {}) {
     ...state
   });
 
-  if (autoDestroy) {
+  if (autoDestroy && !view.componentWillUnmount[hasProxyed]) {
     const oldComponentWillUnmount = view.componentWillUnmount;
     view.componentWillUnmount = function(...args) {
       oldComponentWillUnmount && oldComponentWillUnmount.bind(this)(...args);
       destroyModel(name);
     }
+    view.componentWillUnmount[hasProxyed] = true;
   }
 
   // 更新状态
