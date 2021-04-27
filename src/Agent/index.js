@@ -39,6 +39,7 @@ class Handle {
   setterHandle = Function.prototype;
 }
 
+// 对于不支持Proxy的降级预留
 if (!Proxy.prototype.$sync) {
   Proxy.prototype.$sync = Function.prototype;
 }

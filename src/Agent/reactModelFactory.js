@@ -3,9 +3,12 @@ const modelDestroyMap = {};
 const hasProxyed = Symbol('hasProxyed');
 
 function destroyModel(name) {
-  modelDestroyMap[name] && modelDestroyMap[name](modelMap[name]);
-  delete modelMap[name];
-  delete modelDestroyMap[name];
+  const model = modelMap[name];
+  if (model) {
+    modelDestroyMap[name].bind(model)();
+    delete modelMap[name];
+    delete modelDestroyMap[name];
+  }
 }
 
 function createModel(config = {}) {
@@ -14,9 +17,9 @@ function createModel(config = {}) {
     view, // React对象
     name, // 业务模型名称
     state = {}, // 初始状态
-    methods = {}, // 业务方法
-    autoDestroy = true,
-    onDestroy = Function.prototype,
+    methods = {}, // 自定义的业务方法
+    autoDestroy = true, // 组件卸载时自动销毁
+    onDestroy = Function.prototype, // 销毁时的回调
   } = config;
 
   if (name === undefined || name === null) {
@@ -43,7 +46,7 @@ function createModel(config = {}) {
   // 更新状态
   const setState = function(newState, callback) {
     // 同步模式
-    if (callback) {
+    if (typeof callback === 'function') {
       return view.setState(newState, callback);
     }
     // 异步模式

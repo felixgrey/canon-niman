@@ -1,6 +1,9 @@
 const axios = require('axios');
 const Ajax = require('./AabstractAjax.js');
 
+// import axios from 'axios';
+// import Ajax from './AabstractAjax.js';
+
 Ajax.defaultParam = {
   ...Ajax.defaultParam,
   afterResponse: (response, info, instance) => {
@@ -8,7 +11,7 @@ Ajax.defaultParam = {
       data,
       status,
     } = response || {};
-    
+
     if (info.submit) {
       return {
         status
@@ -34,7 +37,7 @@ Ajax.doFetch = async function(param = {}) {
     setAbortHandle,
     beforeRequest,
     afterResponse,
-    
+
     info,
     instance,
   } = param;
@@ -67,3 +70,4 @@ Ajax.doFetch = async function(param = {}) {
 };
 
 module.exports = Ajax;
+// export default Ajax;

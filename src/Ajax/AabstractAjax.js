@@ -12,6 +12,8 @@ const BASE_URL = (() => {
   return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
 })();
 
+let fetchIndex = 1;
+
 class Ajax {
   constructor(namedFetch = {}, defaultParam = {}) {
     this.defaultParam = defaultParam;
@@ -21,6 +23,8 @@ class Ajax {
         return this.fetch({
           ...namedFetch[name],
           ...param
+        }, {
+          fetchName: name
         });
       }
     }
@@ -40,9 +44,7 @@ class Ajax {
     return true;
   }
 
-  async fetch(param = {}, info = {
-    submit: false
-  }) {
+  async fetch(param = {}, info = {}) {
     if (this.destroyed) {
       return;
     }
@@ -60,7 +62,8 @@ class Ajax {
       data,
       params,
       dataType,
-      stopKey,
+      abortKey,
+      ifErrorValue = null,
 
       onFetch = none,
       onAbort = none,
@@ -72,18 +75,19 @@ class Ajax {
       afterResponse,
     } = param;
 
-    const setAbortHandle = (callback) => {
-      if (isNvl(stopKey)) {
-        return;
-      }
+    if (isNvl(abortKey)) {
+      while (this.abortMap.get(`$$fetch-${fetchIndex++}`));
+      abortKey = `$$fetch-${fetchIndex}`;
+    }
 
+    const setAbortHandle = (callback) => {
       const callback$2 = () => {
         const result = callback();
         onAbort(result);
-        this.abortMap.delete(stopKey);
+        this.abortMap.delete(abortKey);
       }
 
-      this.abortMap.set(stopKey, callback$2);
+      this.abortMap.set(abortKey, callback$2);
     }
 
     method = method.toLowerCase();
@@ -118,12 +122,14 @@ class Ajax {
     };
 
     onFetch && onFetch(param);
-    let result;
+    let result = ifErrorValue;
     try {
       result = await Ajax.doFetch(newParam);
       onSuccess(result);
     } catch (e) {
       onError(e);
+    } finally {
+      this.abortMap.delete(abortKey);
     }
 
     if (this.destroyed) {
@@ -182,3 +188,4 @@ Ajax.doFetch = async function(param = {}, instance) {
 }
 
 module.exports = Ajax;
+// export default Ajax;
