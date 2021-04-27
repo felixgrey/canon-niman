@@ -226,6 +226,7 @@ class FormModel {
         formExtend: this.config.extend || {},
         fieldExtend: fieldInfo.extend || {},
         renderExtend,
+        formInstance: this,
       }
     };
   }
