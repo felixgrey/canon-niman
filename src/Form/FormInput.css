@@ -1,0 +1,28 @@
+.form-item-for-antd{
+  height: 40px;
+}
+.form-item-for-antd>label {
+  display: inline-block;
+  width: 33.33333333%;
+  text-align: right;
+}
+.form-item-for-antd>label.required-field-label::before{
+  display: inline-block;
+  margin-right: 4px;
+  color: #ff4d4f;
+  font-size: 14px;
+  font-family: SimSun,sans-serif;
+  line-height: 1;
+  content: "*";
+}
+.form-item-for-antd>label::after{
+  content: ":";
+  display: inline-block;
+  margin: 0 8px 0 2px;
+  height: 100%;
+}
+
+.form-item-for-antd>label + * {
+  display: inline-block;
+  width: 66.66666667%;
+}

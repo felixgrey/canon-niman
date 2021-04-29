@@ -13,7 +13,7 @@ const inputMap = {
       labelStyle,
       inputClassName,
       inputStyle,
-    } = theProps;
+    } = theProps.withField;
     
     const {
       formInstance

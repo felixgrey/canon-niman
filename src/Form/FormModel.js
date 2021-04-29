@@ -5,25 +5,50 @@ function isDiff(a, b) {
   return a !== b;
 }
 
+function deleteValue(data, value) {
+  Object.keys(data).forEach(key => {
+    if (data[key] === value) {
+      Reflect.deleteProperty(data, key);
+    }
+  });
+}
+
+function deleteNull(data) {
+  deleteValue(data, null);
+}
+
 class FormModel {
   constructor(fields = [], config = {}) {
-    this.fields = fields;
-    this.config = config;
-
     const {
       initData = {},
         transformGet = this.transformGet,
         transformSet = this.transformSet,
-        onFormChange = this.onFormChange,
         isBlank = this.isBlank,
+        onFormChange = Function.prototype,
         blankErrInfo = '{{label}}不能为空',
+        disabled = false,
     } = config;
 
+    this.config = config;
     this.transformGet = transformGet;
     this.transformSet = transformSet;
-    this.onFormChange = onFormChange;
     this.isBlank = isBlank;
+    this.onFormChange = onFormChange;
     this.blankErrInfo = blankErrInfo;
+
+    this._initFormState();
+    this.setFormFields(fields);
+    this.setFormData(initData, true);
+    this.setDisabled(disabled, true);
+  }
+
+  recordsState = new WeakMap();
+
+  setFormFields = (fields = [], _isInit = false) => {
+    this.fields = fields;
+    this.fieldMap = {};
+    this.fieldNames = [];
+    this.formState.renderedFelids = new Set();
 
     for (let item of fields) {
       const field = item.field;
@@ -33,26 +58,26 @@ class FormModel {
         throw new Error('must has "field" property');
       }
       this.fieldMap[field] = item;
-      this.fieldNames[field];
+      this.fieldNames.push(field);
     }
 
-    this.setFormData(initData, true);
+    (!_isInit) && this.onFormChange();
   }
-
-  fields = [];
-  fieldMap = {};
-  fieldNames = [];
-
-  formData = [{}];
-  recordsState = {};
 
   _initFormState() {
     this.formState = {
       currentIndex: 0,
-      selected: new Set(),
+      isDisabled: false,
       renderedFelids: new Set(),
     };
   }
+
+  setDisabled = (flag = true, _isInit) => {
+    this.formState.isDisabled = flag;
+    (!_isInit) && this.onFormChange();
+  }
+
+  isDisabled = () => this.formState.isDisabled;
 
   transformGet(fieldInfo, value) {
     return value;
@@ -62,9 +87,7 @@ class FormModel {
     return args[0];
   }
 
-  onFormChange() {}
-
-  startRender() {
+  startRender = (useMap = false) => {
     this.formState.renderedFelids = new Set();
     return [...this.fieldNames];
   }
@@ -79,20 +102,27 @@ class FormModel {
       .replace(/\{\{label\}\}/g, label);
   }
 
-  _initState(index, field) {
+  _initRecordState(index, field) {
     if (index < 0 || index >= this.formData.length || !this.fieldMap[field]) {
       return;
     }
-    const state = this.recordsState[index] = this.recordsState[index] || {
-      fields: {},
-      error: []
-    };
-
-    state.fields[field] = state.fields[field] || {
-      isInit: true,
-      error: [],
-    };
-
+    const record = this.formData[index];
+    let state = this.recordsState.get(record);
+    if (!state) {
+      state = {
+        fields: {},
+        error: [],
+        isSelected: false,
+      };
+      this.recordsState.set(record, state);
+    }
+    if (field !== undefined) {
+      state.fields[field] = state.fields[field] || {
+        isInit: true,
+        isSelected: false,
+        error: [],
+      };
+    }
     return state;
   }
 
@@ -102,6 +132,7 @@ class FormModel {
       return;
     }
     const record = this.formData[index];
+
     if (isDiff([value], record[field])) {
       if (!fieldState.hasOwnProperty('originValue')) {
         fieldState.originValue = record[field];
@@ -146,10 +177,10 @@ class FormModel {
   }
 
   _getFieldState(index, field) {
-    return this._initState(index, field)?.fields[field];
+    return this._initRecordState(index, field)?.fields[field];
   }
 
-  withField(fieldName, renderExtend = {}, index = 0) {
+  withField = (fieldName, renderExtend = {}, index = 0) => {
     if (!this.config.isList) {
       index = 0;
     }
@@ -177,34 +208,53 @@ class FormModel {
       field,
       label = '',
       initValue,
-      dataType = 'string',
-      inputType = 'input',
+      defaultValue,
+      dataType = 'String',
+      inputType = 'Input',
       required = false,
       autoCheck = false,
       rule = Function.prototype,
       onChange = Function.prototype,
       onFocus = Function.prototype,
+      onBlur = Function.prototype,
     } = fieldInfo;
 
     const fieldState = this._getFieldState(index, field);
     let value = this.transformGet(fieldInfo, record[field]);
-    if (value === undefined && fieldState.isInit) {
+
+    if (value === undefined && defaultValue !== undefined) {
+      value = this.transformSet(fieldInfo, [defaultValue, {
+        defaultValue: true
+      }]);
+      this._changeValue(index, field, value, true);
+    }
+
+    if (initValue !== undefined && fieldState.isInit) {
       value = this.transformSet(fieldInfo, [initValue, {
         initValue: true
       }]);
       this._changeValue(index, field, value, true);
     }
 
+    const theExtend = {
+      ...this.config.extend,
+      ...fieldInfo.extend,
+      ...renderExtend,
+    };
+
+    const disabled = !!(this.formState.isDisabled || fieldInfo.disabled || theExtend.disabled);
+
     return {
       props: {
+        disabled,
         value,
         onChange: (...args) => {
+          if (this.formState.isDisabled) {
+            return;
+          }
           const value = this.transformSet(fieldInfo, args);
           this._changeValue(index, field, value);
           onChange(value, args);
-          if (autoCheck) {
-            this._checkField(field, index);
-          }
         },
         onFocus: (...args) => {
           // 获得焦点的时候清除错误信息
@@ -213,54 +263,61 @@ class FormModel {
           this.formState.currentIndex = index;
           onFocus(...args);
           this.onFormChange();
+        },
+        onBlur: (...args) => {
+          if (autoCheck) {
+            onBlur(...args);
+            this._checkField(field, index);
+          }
         }
       },
       info: {
         label,
         field,
+
         isInit: fieldState.isInit,
         error: fieldState.error,
+
         required,
         dataType,
         inputType,
-        formExtend: this.config.extend || {},
-        fieldExtend: fieldInfo.extend || {},
-        renderExtend,
+
+        theExtend,
         formInstance: this,
       }
     };
   }
 
-  setFormData(data = {}, _isInit = false) {
-    this.recordsState = {};
+  setFormData = (data = {}, _isInit = false) => {
+    this.recordsState = new WeakMap();
     this._initFormState();
     this.formData = [].concat(data);
     (!_isInit) && this.onFormChange();
   }
 
-  _indexList() {
+  _recordIndexList() {
     return this.formData.map((a, i) => i);
   }
 
-  resetData(indexList = true, fields = true) {
-    if (indexList === true) {
-      indexList = this._indexList();
+  resetData = (indexList, fields) => {
+    if (!Array.isArray(indexList)) {
+      indexList = this._recordIndexList();
     }
     indexList = [].concat(indexList);
 
-    if (fields === true) {
+    if (!Array.isArray(fields)) {
       fields = this.fields.map(item => item.field);
     }
     fields = [].concat(fields);
 
     for (let index of indexList) {
-      const record = this.formData[record];
+      const record = this.formData[index];
       if (!record) {
         continue;
       }
       for (let field of fields) {
         const fieldInfo = this.fieldMap[field];
-        if (!record) {
+        if (!fieldInfo) {
           continue;
         }
         const fieldState = this._getFieldState(index, field);
@@ -269,16 +326,18 @@ class FormModel {
         }
         if (fieldState.hasOwnProperty('originValue')) {
           const originValue = fieldState.originValue;
-          delete fieldState.originValue;
+          Reflect.deleteProperty(fieldState, 'originValue');
           fieldState.isInit = true;
           record[field] = originValue;
+          deleteValue(record);
         }
       }
     }
+
     this.onFormChange();
   }
 
-  async checkFormData(allFields = false) {
+  checkFormData = async (allFields = false) => {
     let pass = true;
     const fields = allFields ? this.fields : this.getRenderedFields();
     const count = this.formData.length;
@@ -291,46 +350,84 @@ class FormModel {
     return pass;
   }
 
-  getRenderedFields() {
+  getRenderedFields = () => {
     return Array.from(this.formState.renderedFelids);
   }
 
-  getFormData() {
+  getFormData = () => {
     if (!this.config.isList) {
-      return this.formData[0];
+      return {
+        ...this.formData[0]
+      };
     }
-    return this.formData;
+    return [...this.formData];
   }
 
-  selectRecords(indexList = []) {
-    this.formState.selected = new Set([
-      ...(Array.from(this.formState.selected)),
-      ...([].concat(indexList))
-    ]);
+  _changeSelect(indexList = [], flag = true) {
+    indexList = [].concat(indexList);
+    for (let index of indexList) {
+      this._initRecordState(index).isSelected = flag;
+    }
     this.onFormChange();
   }
 
-  unSelectRecords(indexList = []) {
-    [].concat(indexList).forEach(index => this.formState.selected.delete(index));
-    this.onFormChange();
+  selectRecords = (indexList) => {
+    this._changeSelect(indexList, true);
   }
 
-  selectAll() {
-    this.selectRecords(this._indexList());
+  unselectRecords = (indexList = []) => {
+    this._changeSelect(indexList, false);
   }
 
-  selectNone() {
-    this.unSelectRecords(this._indexList());
+  selectAll = () => {
+    this.selectRecords(this._recordIndexList());
   }
 
-  getCurrent(record = false) {
-    if (record) {
-      return this.formData[this.formState.currentIndex];
+  selectNone = () => {
+    this.unSelectRecords(this._recordIndexList());
+  }
+
+  _getAboutSelected(flag = true) {
+    const indexList = [];
+    const recordList = this.formData
+      .filter((record, index) => {
+        if (this._initRecordState(index).isSelected === flag) {
+          indexList.push(index);
+          return true;
+        }
+        return false;
+      });
+    return [indexList, recordList];
+  }
+
+  getSelected = (justIndex = false) => {
+    const [indexList, recordList] = this._getAboutSelected(true);
+    if (justIndex === true) {
+      return indexList;
     }
-    return this.formState.currentIndex;
+    return recordList;
   }
 
-  setFieldsValue(record = {}, index = 0) {
+  getUnselected = (justIndex = false) => {
+    const [indexList, recordList] = this._getAboutSelected(false);
+    if (justIndex === true) {
+      return indexList;
+    }
+    return recordList;
+  }
+
+  getCurrent = (justIndex = false) => {
+    const {
+      currentIndex
+    } = this.formState;
+
+    if (justIndex) {
+      return currentIndex;
+    }
+    return this.formData[currentIndex];
+  }
+
+  setFieldsValue = (record = {}, index = 0) => {
     if (!this.config.isList) {
       index = 0;
     }
@@ -340,5 +437,7 @@ class FormModel {
   }
 }
 
-module.exports = FormModel;
-// export default FormModel;
+FormModel.deleteNull = deleteNull;
+
+// module.exports = FormModel;
+export default FormModel;
