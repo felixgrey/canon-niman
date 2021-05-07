@@ -27,6 +27,7 @@ class FormModel {
         onFormChange = Function.prototype,
         blankErrInfo = '{{label}}不能为空',
         disabled = false,
+        keyField = 'id',
     } = config;
 
     this.config = config;
@@ -35,6 +36,7 @@ class FormModel {
     this.isBlank = isBlank;
     this.onFormChange = onFormChange;
     this.blankErrInfo = blankErrInfo;
+    this.keyField = keyField;
 
     this._initFormState();
     this.setFormFields(fields);
@@ -73,6 +75,9 @@ class FormModel {
   }
 
   setDisabled = (flag = true, _isInit) => {
+    if (this.formState.isDisabled === flag) {
+      return;
+    }
     this.formState.isDisabled = flag;
     (!_isInit) && this.onFormChange();
   }
@@ -87,9 +92,15 @@ class FormModel {
     return args[0];
   }
 
-  startRender = (useMap = false) => {
+  startRender = () => {
     this.formState.renderedFelids = new Set();
-    return [...this.fieldNames];
+    if (!this.config.isList) {
+      return [...this.fieldNames];
+    }
+
+    return this._recordIndexList.map(i => {
+      return this.fieldNames.map(field => [field, i]);
+    }).flat(1);
   }
 
   isBlank(value, fieldInfo) {
@@ -177,7 +188,7 @@ class FormModel {
   }
 
   _getFieldState(index, field) {
-    return this._initRecordState(index, field)?.fields[field];
+    return this._initRecordState(index, field).fields[field];
   }
 
   withField = (fieldName, renderExtend = {}, index = 0) => {
@@ -190,14 +201,19 @@ class FormModel {
 
     if (!fieldInfo || !record) {
       return {
-        props: {
+        propsForBind: {
+          disabled: true,
           value: undefined,
           onChange: Function.prototype,
           onFocus: Function.prototype,
+          onBlur: Function.prototype,
         },
         info: {
           field: fieldName,
           notExisted: true,
+          error: [],
+          theExtend: {},
+          formInstance: this,
         }
       };
     }
@@ -245,7 +261,7 @@ class FormModel {
     const disabled = !!(this.formState.isDisabled || fieldInfo.disabled || theExtend.disabled);
 
     return {
-      props: {
+      propsForBind: {
         disabled,
         value,
         onChange: (...args) => {
@@ -369,6 +385,21 @@ class FormModel {
       this._initRecordState(index).isSelected = flag;
     }
     this.onFormChange();
+  }
+
+  _changeSelectByKey(keyList = [], flag) {
+    const indexList = this.formData
+      .map((record, index) => keyList.includes(record[this.keyField]) ? index : null)
+      .filter(index => index !== null);
+    this._changeSelect(indexList, flag);
+  }
+
+  selectRecordsByKey = (keyList) => {
+    this._changeSelectByKey(keyList, true);
+  }
+
+  unselectRecordsByKey = (keyList) => {
+    this._changeSelectByKey(keyList, false);
   }
 
   selectRecords = (indexList) => {

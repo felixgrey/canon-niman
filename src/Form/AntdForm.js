@@ -4,6 +4,7 @@ import {
   InputNumber as AntdInputNumber, 
   DatePicker as AntdDatePicker,
   Select, 
+  Button,
 } from 'antd';
 
 import FormModel from './FormModel';
@@ -13,17 +14,23 @@ import './FormInput.css';
 const { Option } = Select;
 const { TextArea: AntdTextArea } = AntdInput;
 
-const inputMap = {
-  Input: function (theProps) {
-    return <AntdInput {...theProps.props}  />;
-  },
-  TextArea: function(theProps){
-    return <AntdTextArea {...theProps.props} />;
-  },
-  InputNumber: function(theProps){
-    return <AntdInputNumber />;
-  },
-  SingleSelect: function(theProps){
+function createProps(theProps, exceptFields = []) {
+  return Object.keys(theProps.theExtend)
+    .filter(field => !exceptFields.includes(field))
+    .reduce((newProps, field) => (newProps[field] = theProps.theExtend[field], newProps),{
+      ...theProps.propsForBind
+    });
+}
+
+function createSelect(muti = false) {
+  
+  const setMode = muti ? 
+    props => (props.mode = 'multiple') : 
+    props => (delete props.mode);
+  
+  return function(theProps){
+    const propsForBind = createProps(theProps,
+      ['data', 'labelField', 'valueField', 'valueInLabel']);
     
     const {
       data = [],
@@ -32,23 +39,39 @@ const inputMap = {
       valueInLabel = false,
     } = theProps.theExtend;
     
+    setMode(propsForBind);
+
     const getLabel = valueInLabel ? 
       (item) => `(${item[valueField]}) ${item[labelField]}` :
       (item) => item[labelField]; 
     
-    return <Select {...theProps.props} >
+    return <Select {...propsForBind} >
       {data.map((item, index) => {
         return <Option key={index} value={item[valueField]}>
           {getLabel(item)}
         </Option>
       })}
     </Select>;
+  }
+}
+
+const inputMap = {
+  Input: function (theProps) {
+    return <AntdInput {...createProps(theProps)}  />;
   },
+  TextArea: function(theProps){
+    return <AntdTextArea {...createProps(theProps)} />;
+  },
+  InputNumber: function(theProps){    
+    return <AntdInputNumber {...createProps(theProps)} />;
+  },
+  SingleSelect: createSelect(false),
+  MutiSelect: createSelect(true),
   RadioButton: function(theProps){
     // TODO
     return null;
   },
-  MutiSelect: function(theProps){
+  SingleModalSelect: function(theProps) {
     // TODO
     return null;
   },
@@ -71,6 +94,9 @@ const inputMap = {
 };
 
 function registerInput(name, InputComponent) {
+  if (inputMap[name]) {
+    return;
+  }
   inputMap[name] = InputComponent;
 }
 
@@ -101,7 +127,7 @@ class FormForAntd extends FormModel {
       if (fieldInfo) {
         Object.assign(fieldInfo, newFieldInfo);
       } else {
-        fields.push(newFieldInfo)
+        throw new Error(`field ${field} not exist.`);
       }
     });
     
@@ -146,7 +172,7 @@ function FormItem(theProps) {
   } = theProps;
   
   const {
-    props,
+    propsForBind,
     info,
   } = withField;
   
@@ -183,12 +209,46 @@ function FormItem(theProps) {
     <Inputer 
       className={inputClassName} 
       style={inputStyle}
-      props={props} 
+      propsForBind={propsForBind} 
       theExtend={theExtend} />
   </div>
 }
 
+class SubmitButton extends Component {
+  
+  onEnter = (e) => {
+    if (e.key === "Enter" && this.props.onClick) {
+      this.props.onClick(e);
+    }
+  }
+  
+  componentDidMount() {
+    if (!this.props.noEnter) {
+      window.addEventListener('keypress', this.onEnter);
+    }
+  }
+  
+  componentWillUnmount() {
+    window.removeEventListener('keypress',this.onEnter);
+  }
+  
+  render() {
+    return <Button type="primary" {...this.props}>
+      {this.props.children}
+    </Button>
+  } 
+}
+
+function listenEnter(callback = Function.prototype) {
+  return {
+    onKeyPress: (e) => {
+      e.key === 'Enter' && callback(e);
+    }
+  }
+}
+
 export {
+  listenEnter,
   FormItem,
   FormForAntd,
   registerInput,
