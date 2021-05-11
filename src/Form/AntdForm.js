@@ -219,7 +219,7 @@ function FormItem(theProps) {
     return null;
   }
 
-  // 组件按照已定义、自定义、默认次序寻找
+  // 组件按照已定义、默认次序寻找
   const Inputer = inputMap[inputType] || inputMap.Input;
   
   const formConfig = formInstance.config;
