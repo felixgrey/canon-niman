@@ -98,8 +98,8 @@ class FormModel {
       return [...this.fieldNames];
     }
 
-    return this._recordIndexList.map(i => {
-      return this.fieldNames.map(field => [field, i]);
+    return this._recordIndexList().map(i => {
+      return this.fieldNames.map((field, j) => [field, i, j === 0]);
     }).flat(1);
   }
 
@@ -107,7 +107,10 @@ class FormModel {
     return value === undefined || value === null || new String(value).trim() === '';
   }
 
-  _renderBlankTemplate(field, label) {
+  _renderBlankTemplate(field, label, index) {
+    if (typeof this.blankErrInfo === 'function') {
+      return this.blankErrInfo(field, label, index);
+    }
     return this.blankErrInfo
       .replace(/\{\{field\}\}/g, field)
       .replace(/\{\{label\}\}/g, label);
@@ -168,10 +171,11 @@ class FormModel {
     } = fieldInfo;
 
     fieldState.checking = true;
+    fieldState.error = [];
     this.onFormChange();
 
-    if (required && this.isBlank(value, fieldInfo)) {
-      fieldState.error.push(this._renderBlankTemplate(field, label));
+    if (required && this.isBlank(value, fieldInfo, index)) {
+      fieldState.error.push(this._renderBlankTemplate(field, label, index));
       pass = false;
     }
 
@@ -192,6 +196,10 @@ class FormModel {
   }
 
   withField = (fieldName, renderExtend = {}, index = 0) => {
+    if (typeof renderExtend === 'number') {
+      index = renderExtend;
+      renderExtend = {};
+    }
     if (!this.config.isList) {
       index = 0;
     }
@@ -230,9 +238,6 @@ class FormModel {
       required = false,
       autoCheck = false,
       rule = Function.prototype,
-      onChange = Function.prototype,
-      onFocus = Function.prototype,
-      onBlur = Function.prototype,
     } = fieldInfo;
 
     const fieldState = this._getFieldState(index, field);
@@ -251,12 +256,17 @@ class FormModel {
       }]);
       this._changeValue(index, field, value, true);
     }
-
     const theExtend = {
       ...this.config.extend,
       ...fieldInfo.extend,
       ...renderExtend,
     };
+
+    const {
+      onChange = renderExtend.onChange || Function.prototype,
+        onFocus = renderExtend.onFocus || Function.prototype,
+        onBlur = renderExtend.onBlur || Function.prototype,
+    } = fieldInfo;
 
     const disabled = !!(this.formState.isDisabled || fieldInfo.disabled || theExtend.disabled);
 
@@ -290,14 +300,12 @@ class FormModel {
       info: {
         label,
         field,
-
+        index,
         isInit: fieldState.isInit,
         error: fieldState.error,
-
         required,
         dataType,
         inputType,
-
         theExtend,
         formInstance: this,
       }
@@ -359,7 +367,7 @@ class FormModel {
     const count = this.formData.length;
     for (let index = 0; index < count; index++) {
       for (let fieldInfo of fields) {
-        pass = pass && await this._checkField(fieldInfo.field, index);
+        pass = await this._checkField(fieldInfo.field, index) && pass;
       }
     }
 

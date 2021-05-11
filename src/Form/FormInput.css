@@ -1,11 +1,30 @@
 .form-item-for-antd{
-  height: 40px;
+  display: flex;
+  margin-bottom: 24px;
 }
+
+.form-item-for-antd.has-error {
+   margin-bottom: 0;
+}
+
 .form-item-for-antd>label {
   display: inline-block;
   width: 33.33333333%;
   text-align: right;
+  vertical-align: top;
+  color: rgba(0, 0, 0, 0.85);
+  line-height: 32px;
 }
+.form-item-for-antd .form-item-input {
+  flex-grow: 1;
+}
+
+.form-item-for-antd .form-item-input .ant-form-explain.form-item-error{
+  margin-top: 0;
+  height: 24px;
+  margin-bottom: 0;
+}
+
 .form-item-for-antd>label.required-field-label::before{
   display: inline-block;
   margin-right: 4px;
@@ -25,4 +44,11 @@
 .form-item-for-antd>label + * {
   display: inline-block;
   width: 66.66666667%;
+}
+
+.form-item-for-antd .label-input {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 32px;
+  padding-left: 12px;
 }
