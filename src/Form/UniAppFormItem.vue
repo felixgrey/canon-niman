@@ -2,16 +2,13 @@
   <view v-if="!notRender" class="form-item-for-uni-app">
     <view class="form-item-label">{{ label }}</view>
     <view class="form-item-inputer">
-      <view v-if="inputType === 'input'"><input type="text" :value="value" @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled"/></view>
-      <view v-else-if="inputType === 'inputnumber'"><input type="number" :value="value" @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled"/></view>
+      <view v-if="inputType === 'input'"><input type="text" :value="value" @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled" /></view>
+      <view v-else-if="inputType === 'inputnumber'"><input type="number" :value="value" @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled" /></view>
       <view v-else-if="inputType === 'label'" class="form-item-value-label">
         <text>{{ value }}</text>
       </view>
       <view v-else-if="component">
-        <component :is="component"
-          :theExtend="theExtend"
-          type="text" :value="value" @change="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled"
-        ></component>
+        <component :is="component" :theExtend="theExtend" type="text" :value="value" @change="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled"></component>
       </view>
     </view>
   </view>
@@ -88,6 +85,8 @@ const UniAppFormItem = {
 
     let { notExisted, label, inputType = 'Input', dataType = 'String', theExtend, required, formInstance, error, index } = info;
 
+    inputType = inputType.toLowerCase();
+
     let notRender = false;
     if (notExisted) {
       inputType = '';
@@ -102,15 +101,15 @@ const UniAppFormItem = {
     if (theExtend.viewMode) {
       inputType = 'label';
     }
-    
+
     let component;
     if (!/Input|InputNumber|Label/gi.test(inputType)) {
       component = inputMap[inputType];
-      inputType = '';
     }
-
     if (theExtend.component) {
       component = theExtend.component;
+    }
+    if (component) {
       inputType = '';
     }
 
@@ -118,7 +117,7 @@ const UniAppFormItem = {
       ...propsForBind,
       notRender,
       label,
-      inputType: inputType.toLowerCase(),
+      inputType,
       dataType: dataType.toLowerCase(),
       hasError: error.length,
       errorMessage: error.join(','),
@@ -139,7 +138,7 @@ Vue.prototype.$$Form = FormForUniApp;
 Vue.component('form-item', UniAppFormItem);
 Vue.prototype.$$registerInput = function(name, component) {
   inputMap[name.toLocaleLowerCase()] = component;
-}
+};
 </script>
 
 <style lang="scss">
