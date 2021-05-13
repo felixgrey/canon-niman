@@ -29,7 +29,6 @@ class FormModel {
         disabled = false,
         keyField = 'id',
     } = config;
-
     this.config = config;
     this.transformGet = transformGet;
     this.transformSet = transformSet;
@@ -37,21 +36,17 @@ class FormModel {
     this.onFormChange = onFormChange;
     this.blankErrInfo = blankErrInfo;
     this.keyField = keyField;
-
     this._initFormState();
     this.setFormFields(fields);
     this.setFormData(initData, true);
     this.setDisabled(disabled, true);
   }
-
   recordsState = new WeakMap();
-
   setFormFields = (fields = [], _isInit = false) => {
     this.fields = fields;
     this.fieldMap = {};
     this.fieldNames = [];
     this.formState.renderedFelids = new Set();
-
     for (let item of fields) {
       const field = item.field;
       if (this.isBlank(field, {
@@ -62,10 +57,8 @@ class FormModel {
       this.fieldMap[field] = item;
       this.fieldNames.push(field);
     }
-
     (!_isInit) && this.onFormChange();
   }
-
   _initFormState() {
     this.formState = {
       currentIndex: 0,
@@ -73,7 +66,6 @@ class FormModel {
       renderedFelids: new Set(),
     };
   }
-
   setDisabled = (flag = true, _isInit) => {
     if (this.formState.isDisabled === flag) {
       return;
@@ -81,32 +73,25 @@ class FormModel {
     this.formState.isDisabled = flag;
     (!_isInit) && this.onFormChange();
   }
-
   isDisabled = () => this.formState.isDisabled;
-
   transformGet(fieldInfo, value) {
     return value;
   }
-
   transformSet(fieldInfo, args) {
     return args[0];
   }
-
   startRender = () => {
     this.formState.renderedFelids = new Set();
     if (!this.config.isList) {
       return [...this.fieldNames];
     }
-
-    return this._recordIndexList().map(i => {
+    return this.recordIndexList().map(i => {
       return this.fieldNames.map((field, j) => [field, i, j === 0]);
     }).flat(1);
   }
-
   isBlank(value, fieldInfo) {
     return value === undefined || value === null || new String(value).trim() === '';
   }
-
   _renderBlankTemplate(field, label, index) {
     if (typeof this.blankErrInfo === 'function') {
       return this.blankErrInfo(field, label, index);
@@ -115,7 +100,6 @@ class FormModel {
       .replace(/\{\{field\}\}/g, field)
       .replace(/\{\{label\}\}/g, label);
   }
-
   _initRecordState(index, field) {
     if (index < 0 || index >= this.formData.length || !this.fieldMap[field]) {
       return;
@@ -139,14 +123,12 @@ class FormModel {
     }
     return state;
   }
-
   _changeValue(index, field, value, isInit = false) {
     const fieldState = this._getFieldState(index, field);
     if (!fieldState) {
       return;
     }
     const record = this.formData[index];
-
     if (isDiff([value], record[field])) {
       if (!fieldState.hasOwnProperty('originValue')) {
         fieldState.originValue = record[field];
@@ -156,10 +138,8 @@ class FormModel {
       this.onFormChange();
     }
   }
-
   async _checkField(field, index) {
     let pass = true;
-
     const fieldInfo = this.fieldMap[field];
     const record = this.formData[index];
     const fieldState = this._getFieldState(index, field);
@@ -173,28 +153,22 @@ class FormModel {
     fieldState.checking = true;
     fieldState.error = [];
     this.onFormChange();
-
     if (required && this.isBlank(value, fieldInfo, index)) {
       fieldState.error.push(this._renderBlankTemplate(field, label, index));
       pass = false;
     }
-
     const result = await rule(value, record, index, this.formData);
     if (typeof result === 'string') {
       fieldState.error.push(result);
       pass = false;
     }
-
     fieldState.checking = false;
     this.onFormChange();
-
     return pass;
   }
-
   _getFieldState(index, field) {
     return this._initRecordState(index, field).fields[field];
   }
-
   withField = (fieldName, renderExtend = {}, index = 0) => {
     if (typeof renderExtend === 'number') {
       index = renderExtend;
@@ -203,10 +177,8 @@ class FormModel {
     if (!this.config.isList) {
       index = 0;
     }
-
     const fieldInfo = this.fieldMap[fieldName];
     const record = this.formData[index];
-
     if (!fieldInfo || !record) {
       return {
         propsForBind: {
@@ -225,9 +197,7 @@ class FormModel {
         }
       };
     }
-
     this.formState.renderedFelids.add(fieldInfo);
-
     const {
       field,
       label = '',
@@ -239,17 +209,14 @@ class FormModel {
       autoCheck = false,
       rule = Function.prototype,
     } = fieldInfo;
-
     const fieldState = this._getFieldState(index, field);
     let value = this.transformGet(fieldInfo, record[field]);
-
     if (value === undefined && defaultValue !== undefined) {
       value = this.transformSet(fieldInfo, [defaultValue, {
         defaultValue: true
       }]);
       this._changeValue(index, field, value, true);
     }
-
     if (initValue !== undefined && fieldState.isInit) {
       value = this.transformSet(fieldInfo, [initValue, {
         initValue: true
@@ -261,15 +228,12 @@ class FormModel {
       ...fieldInfo.extend,
       ...renderExtend,
     };
-
     const {
       onChange = renderExtend.onChange || Function.prototype,
         onFocus = renderExtend.onFocus || Function.prototype,
         onBlur = renderExtend.onBlur || Function.prototype,
     } = fieldInfo;
-
     const disabled = !!(this.formState.isDisabled || fieldInfo.disabled || theExtend.disabled);
-
     return {
       propsForBind: {
         disabled,
@@ -311,21 +275,18 @@ class FormModel {
       }
     };
   }
-
   setFormData = (data = {}, _isInit = false) => {
     this.recordsState = new WeakMap();
     this._initFormState();
     this.formData = [].concat(data);
     (!_isInit) && this.onFormChange();
   }
-
-  _recordIndexList() {
+  recordIndexList() {
     return this.formData.map((a, i) => i);
   }
-
   resetData = (indexList, fields) => {
     if (!Array.isArray(indexList)) {
-      indexList = this._recordIndexList();
+      indexList = this.recordIndexList();
     }
     indexList = [].concat(indexList);
 
@@ -333,7 +294,6 @@ class FormModel {
       fields = this.fields.map(item => item.field);
     }
     fields = [].concat(fields);
-
     for (let index of indexList) {
       const record = this.formData[index];
       if (!record) {
@@ -357,10 +317,8 @@ class FormModel {
         }
       }
     }
-
     this.onFormChange();
   }
-
   checkFormData = async (allFields = false) => {
     let pass = true;
     const fields = allFields ? this.fields : this.getRenderedFields();
@@ -370,14 +328,11 @@ class FormModel {
         pass = await this._checkField(fieldInfo.field, index) && pass;
       }
     }
-
     return pass;
   }
-
   getRenderedFields = () => {
     return Array.from(this.formState.renderedFelids);
   }
-
   getFormData = () => {
     if (!this.config.isList) {
       return {
@@ -386,7 +341,6 @@ class FormModel {
     }
     return [...this.formData];
   }
-
   _changeSelect(indexList = [], flag = true) {
     indexList = [].concat(indexList);
     for (let index of indexList) {
@@ -394,38 +348,44 @@ class FormModel {
     }
     this.onFormChange();
   }
-
   _changeSelectByKey(keyList = [], flag) {
     const indexList = this.formData
       .map((record, index) => keyList.includes(record[this.keyField]) ? index : null)
       .filter(index => index !== null);
     this._changeSelect(indexList, flag);
   }
-
   selectRecordsByKey = (keyList) => {
     this._changeSelectByKey(keyList, true);
   }
-
   unselectRecordsByKey = (keyList) => {
     this._changeSelectByKey(keyList, false);
   }
-
   selectRecords = (indexList) => {
     this._changeSelect(indexList, true);
   }
-
   unselectRecords = (indexList = []) => {
     this._changeSelect(indexList, false);
   }
-
   selectAll = () => {
-    this.selectRecords(this._recordIndexList());
+    this.selectRecords(this.recordIndexList());
   }
-
   selectNone = () => {
-    this.unSelectRecords(this._recordIndexList());
+    this.unSelectRecords(this.recordIndexList());
   }
-
+  insert(data = {}, index = this.formData.length) {
+    if (!this.config.isList) {
+      return;
+    }
+    this.formData.splice(index, 0, data);
+    this.onFormChange();
+  }
+  remove(index = null) {
+    if (!this.config.isList || index === null) {
+      return;
+    }
+    this.formData.splice(index, 1);
+    this.onFormChange();
+  }
   _getAboutSelected(flag = true) {
     const indexList = [];
     const recordList = this.formData
@@ -438,7 +398,6 @@ class FormModel {
       });
     return [indexList, recordList];
   }
-
   getSelected = (justIndex = false) => {
     const [indexList, recordList] = this._getAboutSelected(true);
     if (justIndex === true) {
@@ -446,7 +405,6 @@ class FormModel {
     }
     return recordList;
   }
-
   getUnselected = (justIndex = false) => {
     const [indexList, recordList] = this._getAboutSelected(false);
     if (justIndex === true) {
@@ -454,7 +412,6 @@ class FormModel {
     }
     return recordList;
   }
-
   getCurrent = (justIndex = false) => {
     const {
       currentIndex
@@ -465,7 +422,6 @@ class FormModel {
     }
     return this.formData[currentIndex];
   }
-
   setFieldsValue = (record = {}, index = 0) => {
     if (!this.config.isList) {
       index = 0;
@@ -474,8 +430,22 @@ class FormModel {
       this._changeValue(index, field, record[field]);
     });
   }
+  updateFields(newFields = []) {
+    const fields = [...this.fields];
+    [].concat(newFields).forEach(newFieldInfo => {
+      const {
+        field
+      } = newFieldInfo;
+      const fieldInfo = this.fieldMap[field];
+      if (fieldInfo) {
+        Object.assign(fieldInfo, newFieldInfo);
+      } else {
+        throw new Error(`field ${field} not exist.`);
+      }
+    });
+    this.onFormChange();
+  }
 }
-
 FormModel.deleteNull = deleteNull;
 
 // module.exports = FormModel;

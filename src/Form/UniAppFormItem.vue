@@ -1,9 +1,18 @@
 <template>
-  <view class="form-item-for-uni-app">
+  <view v-if="!notRender" class="form-item-for-uni-app">
     <view class="form-item-label">{{ label }}</view>
     <view class="form-item-inputer">
-      <view v-if="inputType === 'input'"><input type="text" :value="value" @input="onChange" @focus="onFocus" @blur="onBlur" /></view>
-      <view v-if="inputType === 'inputnumber'"><input type="number" :value="value" @input="onChange" @focus="onFocus" @blur="onBlur" /></view>
+      <view v-if="inputType === 'input'"><input type="text" :value="value" @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled"/></view>
+      <view v-else-if="inputType === 'inputnumber'"><input type="number" :value="value" @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled"/></view>
+      <view v-else-if="inputType === 'label'" class="form-item-value-label">
+        <text>{{ value }}</text>
+      </view>
+      <view v-else-if="component">
+        <component :is="component"
+          :theExtend="theExtend"
+          type="text" :value="value" @change="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled"
+        ></component>
+      </view>
     </view>
   </view>
 </template>
@@ -11,6 +20,8 @@
 <script>
 import Vue from 'vue';
 import FormModel from './FormModel.js';
+
+const inputMap = {};
 
 function isBlank(v) {
   return v === undefined || v === null || new String(v).trim() === '';
@@ -48,42 +59,6 @@ class FormForUniApp extends FormModel {
     data.contextData = this.contextData;
     return data;
   }
-  
-
-
-  insert(data = {}, index = this.formData.length) {
-    if (!this.config.isList) {
-      return;
-    }
-    this.formData.splice(index, 0, data);
-    this.onFormChange();
-  }
-  
-  remove(index = null) {
-    if (!this.config.isList || index === null) {
-      return;
-    }
-    this.formData.splice(index, 1);
-    this.onFormChange();
-  }
-
-  updateFields(newFields = []) {
-    const fields = [...this.fields];
-
-    [].concat(newFields).forEach(newFieldInfo => {
-      const { field } = newFieldInfo;
-
-      const fieldInfo = this.fieldMap[field];
-
-      if (fieldInfo) {
-        Object.assign(fieldInfo, newFieldInfo);
-      } else {
-        throw new Error(`field ${field} not exist.`);
-      }
-    });
-
-    this.onFormChange();
-  }
 
   transformSet(fieldInfo, [value]) {
     //uniApp组件 onChange事件参数可能是值也可能是事件
@@ -101,8 +76,7 @@ class FormForUniApp extends FormModel {
 }
 
 export { FormForUniApp };
-
-export default {
+const UniAppFormItem = {
   props: {
     withField: {
       type: Object,
@@ -114,25 +88,58 @@ export default {
 
     let { notExisted, label, inputType = 'Input', dataType = 'String', theExtend, required, formInstance, error, index } = info;
 
+    let notRender = false;
     if (notExisted) {
       inputType = '';
+      notRender = true;
     }
 
     if (theExtend.noneIfBlank && isBlank(propsForBind.value)) {
+      inputType = '';
+      notRender = true;
+    }
+
+    if (theExtend.viewMode) {
+      inputType = 'label';
+    }
+    
+    let component;
+    if (!/Input|InputNumber|Label/gi.test(inputType)) {
+      component = inputMap[inputType];
+      inputType = '';
+    }
+
+    if (theExtend.component) {
+      component = theExtend.component;
       inputType = '';
     }
 
     return {
       ...propsForBind,
+      notRender,
       label,
       inputType: inputType.toLowerCase(),
       dataType: dataType.toLowerCase(),
       hasError: error.length,
-      errorMessage: error.join(',')
+      errorMessage: error.join(','),
+      theExtend,
+      component
     };
   },
-  methods: {}
+  methods: {
+    renderComponent() {
+      return this.component;
+    }
+  }
 };
+
+export default UniAppFormItem;
+
+Vue.prototype.$$Form = FormForUniApp;
+Vue.component('form-item', UniAppFormItem);
+Vue.prototype.$$registerInput = function(name, component) {
+  inputMap[name.toLocaleLowerCase()] = component;
+}
 </script>
 
 <style lang="scss">
@@ -141,6 +148,7 @@ export default {
   height: 32px;
   padding: 2px;
   border-bottom: solid 1px $uni-border-color;
+  flex-direction: row;
 
   uni-input {
     height: 32px;
@@ -150,6 +158,7 @@ export default {
     padding: 0 8px;
     line-height: 32px;
     width: 90px;
+    flex-direction: row;
 
     &::after {
       content: ':';
@@ -157,6 +166,7 @@ export default {
   }
 
   & > .form-item-inputer {
+    flex-direction: row;
     line-height: 32px;
   }
 }

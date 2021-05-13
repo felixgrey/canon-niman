@@ -1,11 +1,9 @@
-const axios = require('axios');
-const Ajax = require('./AabstractAjax.js');
-
-// import axios from 'axios';
-// import Ajax from './AabstractAjax.js';
+import Vue from 'vue';
+import Ajax from './AabstractAjax.js';
 
 Ajax.defaultParam = {
   ...Ajax.defaultParam,
+  method: 'POST',
   afterResponse: (response, info, instance) => {
     const {
       data,
@@ -43,11 +41,8 @@ async function doFetch(param = {}) {
     instance,
   } = param;
 
-  const CancelToken = axios.CancelToken;
-  const source = CancelToken.source();
-
   setAbortHandle(() => {
-    source.cancel(ABORT_SIGN);
+    // 未支持
   });
 
   const config = beforeRequest({
@@ -58,10 +53,19 @@ async function doFetch(param = {}) {
     data,
     params,
     timeout: 0,
-    cancelToken: source.token,
-  }, info, instance, axios, 'axios');
+    cancelToken: null,
+  }, info, instance, uni, 'uni.request');
 
-  const result = await axios(config).catch((error) => {
+  const result = await new Promise((resolve, reject) => {
+    uni.request({
+      url: config.fullUrl,
+      method: config.method.toUpperCase(),
+      data: config.data,
+      header: config.header || {},
+      success: resolve,
+      fail: reject,
+    });
+  }).catch((error = {}) => {
     if (error.message === ABORT_SIGN) {
       return;
     }
@@ -72,10 +76,8 @@ async function doFetch(param = {}) {
 };
 
 Ajax.doFetch = doFetch;
+Vue.prototype.$$Ajax = Ajax;
 
-module.exports = Ajax;
-
-// export default Ajax;
 export {
   doFetch
 }

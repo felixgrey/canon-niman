@@ -151,27 +151,7 @@ class FormForAntd extends FormModel {
     data.contextData = this.contextData;
     return data;
   }
-  
-  updateFields(newFields = []) {
-    const fields = [...this.fields];
-    
-    [].concat(newFields).forEach(newFieldInfo => {
-      const {
-        field
-      } = newFieldInfo;
-      
-      const fieldInfo = this.fieldMap[field];
-      
-      if (fieldInfo) {
-        Object.assign(fieldInfo, newFieldInfo);
-      } else {
-        throw new Error(`field ${field} not exist.`);
-      }
-    });
-    
-    this.onFormChange();
-  }
-  
+
   transformSet(fieldInfo, [value]) {
     //antd组件 onChange事件参数可能是值也可能是事件
     if (value !== null && typeof value === 'object') {

@@ -90,10 +90,10 @@ class Ajax {
       this.abortMap.set(abortKey, callback$2);
     }
 
-    method = method.toLowerCase();
+    method = method.toUpperCase();
     dataType = dataType.toLowerCase();
 
-    if (method === 'get' && isNvl(params)) {
+    if (method === 'GET' && isNvl(params)) {
       params = data;
     }
 
@@ -107,9 +107,21 @@ class Ajax {
       data = formData;
     }
 
+    let fullUrl;
+    if (url.indexOf('://') !== -1) {
+      fullUrl = url;
+    } else {
+      fullUrl = [
+        baseUrl.replace(/\/$/, ''),
+        '/',
+        url.replace(/^\//, ''),
+      ].join('');
+    }
+
     const newParam = {
       baseUrl,
       url,
+      fullUrl,
       method,
       setAbortHandle,
       data,
@@ -153,7 +165,7 @@ class Ajax {
 
 Ajax.defaultParam = {
   baseUrl: BASE_URL,
-  method: 'get',
+  method: 'GET',
   dataType: 'json',
   onFetch: none,
   onCancel: none,
