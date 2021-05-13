@@ -1,6 +1,7 @@
 <template>
-  <view @click="openSearchPage">
+  <view @click="openSearchPage" class="form-search-input">
     <text>{{ getLabel() }}</text>
+    <uni-icons class="form-search-input-icon" type="search"></uni-icons>
   </view>
 </template>
 
@@ -44,11 +45,11 @@ export default {
   },
   methods: {
     getLabel() {
-      if(this.myValue === undefined || this.myValue === null) {
+      if (this.myValue === undefined || this.myValue === null) {
         return;
       }
       const textValue = this.recordValue ? this.myValue[this.valueField] : this.myValue;
-      
+
       let record = this.recordValue ? this.myValue : null;
       if (this.decodeMap.hasOwnProperty(textValue)) {
         record = this.decodeMap[textValue];
@@ -70,22 +71,40 @@ export default {
             this.myValue = item[valueField];
             this.$emit('change', this.myValue);
           };
-          
-      const value = this.recordValue ? this.value[this.valueField] : this.value;
-          
+
+      let textValue = this.myValue;
+      if (this.recordValue && this.myValue) {
+        textValue = this.myValue[this.valueField];
+      }
+
       this.$$openSearchPage({
         labelField,
         valueField,
         data,
-        value,
+        value: textValue,
         muti,
         placeholder,
         onSearch,
-        callback,
+        callback
       });
     }
   }
 };
 </script>
 
-<style></style>
+<style lang="scss">
+.form-search-input {
+  border: 1px solid rgb(229, 229, 229);
+  border-radius: 4px;
+  padding-left: 10px;
+  height: 34px;
+  overflow: hidden;
+
+  .form-search-input-icon {
+    float: right;
+    color: rgb(192, 196, 204) !important;
+    font-size: 15px;
+    margin-right: 5px;
+  }
+}
+</style>

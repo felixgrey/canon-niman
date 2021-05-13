@@ -25,7 +25,7 @@ class FormModel {
         transformSet = this.transformSet,
         isBlank = this.isBlank,
         onFormChange = Function.prototype,
-        blankErrInfo = '{{label}}不能为空',
+        blankErrInfo = '请输入{{label}}',
         disabled = false,
         keyField = 'id',
     } = config;

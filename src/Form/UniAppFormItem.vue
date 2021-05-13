@@ -1,15 +1,17 @@
 <template>
   <view v-if="!notRender" class="form-item-for-uni-app">
-    <view class="form-item-label">{{ label }}</view>
+    <view :class="getLabelClass()">{{ label }}</view>
     <view class="form-item-inputer">
-      <view v-if="inputType === 'input'"><input type="text" :value="value" @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled" /></view>
-      <view v-else-if="inputType === 'inputnumber'"><input type="number" :value="value" @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled" /></view>
+      <view v-if="inputType === 'input'">
+        <uni-easyinput :type="subInputType" :value="value" :clearable="false"
+          @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled" /></view>
       <view v-else-if="inputType === 'label'" class="form-item-value-label">
         <text>{{ value }}</text>
       </view>
       <view v-else-if="component">
-        <component :is="component" :theExtend="theExtend" type="text" :value="value" @change="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled"></component>
+        <component :is="component" :theExtend="theExtend" :value="value" @change="onChange" @focus="onFocus" @blur="onBlur" :disabled="disabled"></component>
       </view>
+      <view class="form-item-error">{{ getError() }}</view>
     </view>
   </view>
 </template>
@@ -83,7 +85,7 @@ const UniAppFormItem = {
   data() {
     const { propsForBind, info, contextData } = this.withField;
 
-    let { notExisted, label, inputType = 'Input', dataType = 'String', theExtend, required, formInstance, error, index } = info;
+    let { notExisted, label, inputType = 'Input', dataType = 'String', theExtend, required, formInstance, index } = info;
 
     inputType = inputType.toLowerCase();
 
@@ -102,8 +104,30 @@ const UniAppFormItem = {
       inputType = 'label';
     }
 
+    /*
+     * @property {String } 	type 							输入框的类型（默认text） password/text/textarea/..
+     * 	@value text				文本输入键盘
+     * 	@value textarea 	多行文本输入键盘
+     * 	@value password 	密码输入键盘
+     * 	@value number			数字输入键盘，注意iOS上app-vue弹出的数字键盘并非9宫格方式
+     * 	@value idcard			身份证输入键盘，信、支付宝、百度、QQ小程序
+     * 	@value digit			带小数点的数字键盘	，App的nvue页面、微信、支付宝、百度、头条、QQ小程序支持
+     */
+    const subInputTypeMap = {
+      inputnumber: 'number', // 兼容antd风格
+      textarea: 'textarea',
+      password: 'password',
+      number: 'number',
+      idcard: 'idcard',
+      digit: 'digit',
+    };
+    let subInputType = inputType === 'input' ? 'text' : null;
+    if (subInputTypeMap.hasOwnProperty(inputType)) {
+      subInputType = subInputTypeMap[inputType]
+      inputType = 'input';
+    }
     let component;
-    if (!/Input|InputNumber|Label/gi.test(inputType)) {
+    if (!/^input$|^label$/g.test(inputType)) {
       component = inputMap[inputType];
     }
     if (theExtend.component) {
@@ -115,19 +139,27 @@ const UniAppFormItem = {
 
     return {
       ...propsForBind,
+      subInputType: subInputType,
+      required,
       notRender,
       label,
       inputType,
       dataType: dataType.toLowerCase(),
-      hasError: error.length,
-      errorMessage: error.join(','),
       theExtend,
       component
     };
   },
   methods: {
-    renderComponent() {
-      return this.component;
+    getError() {
+      const error = this.withField.info.error;
+      return error.join(',');
+    },
+    getLabelClass() {
+      const arr = ['form-item-label'];
+      if (this.required) {
+        arr.push('form-item-required');
+      }
+      return arr.join(' ');
     }
   }
 };
@@ -146,27 +178,38 @@ Vue.prototype.$$registerInput = function(name, component) {
   display: flex;
   height: 32px;
   padding: 2px;
-  border-bottom: solid 1px $uni-border-color;
-  flex-direction: row;
+  padding-bottom: 22px;
+
+  .form-item-error {
+    position: absolute;
+    bottom: -22px;
+    height: 22px;
+    left: 0;
+    line-height: 22px;
+    color: #dd524d;
+    font-size: 12px;
+  }
 
   uni-input {
     height: 32px;
   }
 
   & > .form-item-label {
-    padding: 0 8px;
     line-height: 32px;
     width: 90px;
     flex-direction: row;
 
-    &::after {
-      content: ':';
+    &.form-item-required::after {
+      content: '*';
+      color: #dd524d;
+      font-size: 14;
     }
   }
 
   & > .form-item-inputer {
-    flex-direction: row;
+    position: relative;
     line-height: 32px;
+    flex-grow: 1;
   }
 }
 </style>
