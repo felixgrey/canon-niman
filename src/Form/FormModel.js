@@ -149,11 +149,12 @@ class FormModel {
         rule = Function.prototype,
         label,
     } = fieldInfo;
-
     fieldState.checking = true;
     fieldState.error = [];
     this.onFormChange();
-    if (required && this.isBlank(value, fieldInfo, index)) {
+    const theRequired = (typeof required === 'function') ?
+      required(value, record, index, this.formData) : required;
+    if (theRequired && this.isBlank(value, fieldInfo, index)) {
       fieldState.error.push(this._renderBlankTemplate(field, label, index));
       pass = false;
     }
@@ -179,6 +180,7 @@ class FormModel {
     }
     const fieldInfo = this.fieldMap[fieldName];
     const record = this.formData[index];
+
     if (!fieldInfo || !record) {
       return {
         propsForBind: {
@@ -233,7 +235,11 @@ class FormModel {
         onFocus = renderExtend.onFocus || Function.prototype,
         onBlur = renderExtend.onBlur || Function.prototype,
     } = fieldInfo;
-    const disabled = !!(this.formState.isDisabled || fieldInfo.disabled || theExtend.disabled);
+    const theRequired = (typeof required === 'function') ?
+      required(value, record, index, this.formData) : required;
+    const fieldDisabled = (typeof fieldInfo.disabled === 'function') ?
+      fieldInfo.disabled(value, record, index, this.formData) : fieldInfo.disabled;
+    const disabled = this.formState.isDisabled || fieldDisabled;
     return {
       propsForBind: {
         disabled,
@@ -267,7 +273,7 @@ class FormModel {
         index,
         isInit: fieldState.isInit,
         error: fieldState.error,
-        required,
+        required: theRequired,
         dataType,
         inputType,
         theExtend,
@@ -426,7 +432,7 @@ class FormModel {
     if (!this.config.isList) {
       index = 0;
     }
-    Object.keys(record).forEach((field, index) => {
+    Object.keys(record).forEach(field => {
       this._changeValue(index, field, record[field]);
     });
   }

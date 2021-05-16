@@ -1,5 +1,5 @@
 <template>
-  <view @click="openSearchPage" class="form-search-input">
+  <view @click="openSearchPage" :class="inputClass">
     <text>{{ getLabel() }}</text>
     <uni-icons class="form-search-input-icon" type="search"></uni-icons>
   </view>
@@ -43,6 +43,15 @@ export default {
       decodeMap
     };
   },
+  computed: {
+    inputClass() {
+      const arr = ['form-search-input'];
+      if (this.disabled) {
+        arr.push(' disabled-input');
+      }
+      return arr.join(' ');
+    }
+  },
   methods: {
     getLabel() {
       if (this.myValue === undefined || this.myValue === null) {
@@ -60,8 +69,10 @@ export default {
       return record[this.labelField];
     },
     openSearchPage() {
-      const { labelField, valueField, data, muti, placeholder, recordValue, onSearch } = this;
-
+      const { disabled, labelField, valueField, data, muti, placeholder, recordValue, onSearch } = this;
+      if (disabled) {
+        return;
+      }
       const callback = this.recordValue
         ? item => {
             this.myValue = item;
@@ -99,6 +110,11 @@ export default {
   padding-left: 10px;
   height: 34px;
   overflow: hidden;
+
+  &.disabled-input {
+    border-color: rgb(229, 229, 229);
+    background-color: rgb(238, 238, 238);
+  }
 
   .form-search-input-icon {
     float: right;

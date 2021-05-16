@@ -82,7 +82,8 @@ export default {
       this.searchModel.onSearch = async text => {
         const result = await onSearch(text);
         if (Array.isArray(result)) {
-          this.data = result;
+          // this.data = result;
+          this.data = result.splice(0, 20);
           this.searchModel.startSelect(value, this.data);
         }
       };
