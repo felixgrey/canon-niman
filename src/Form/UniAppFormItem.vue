@@ -1,7 +1,7 @@
 <template>
   <view v-if="!notRender" :class="getFormClass()">
     <view :class="getLabelClass()" :style="getLabelStyle()">{{ label }}</view>
-    <view class="form-item-inputer">
+    <view class="form-item-inputer" :style="getInputStyle()">
       <view v-if="inputType === 'input'">
         <uni-easyinput :type="subInputType" :value="theValue" :clearable="false" @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="theDisabled" />
       </view>
@@ -9,7 +9,7 @@
         <text>{{ theValue }}</text>
       </view>
       <view v-else-if="component">
-        <component :is="component" :theExtend="theExtend" :value="theValue" @change="onChange" @focus="onFocus" @blur="onBlur" :disabled="theDisabled"></component>
+        <component :is="component" :dataType="dataType" :theExtend="theExtend" :value="theValue" @change="onChange" @focus="onFocus" @blur="onBlur" :disabled="theDisabled"></component>
       </view>
       <view class="form-item-error">{{ getError() }}</view>
     </view>
@@ -97,7 +97,7 @@ const UniAppFormItem = {
     let { label, inputType = 'Input', dataType = 'String', theExtend, required, formInstance, index } = info;
     inputType = inputType.toLowerCase();
 
-    const { noneIfBlank, viewMode } = theExtend;
+    const { noneIfBlank, viewMode, simple } = theExtend;
     const formConfig = formInstance.config;
     const theLabelWidth = this.labelWidth || theExtend.labelWidth || formConfig.labelWidth || null;
     const theInputWidth = this.inputWidth || theExtend.inputWidth || formConfig.inputWidth || null;
@@ -128,13 +128,16 @@ const UniAppFormItem = {
       subInputType = subInputTypeMap[inputType];
       inputType = 'input';
     }
+
     let component;
     if (!/^input$|^label$/g.test(inputType)) {
       component = inputMap[inputType];
     }
+
     if (theExtend.component) {
       component = theExtend.component;
     }
+
     if (component) {
       inputType = '';
     }
@@ -145,6 +148,7 @@ const UniAppFormItem = {
       theLabelWidth,
       theInputWidth,
       viewMode,
+      simple,
       required,
       label,
       inputType,
@@ -179,6 +183,16 @@ const UniAppFormItem = {
       }
       return style;
     },
+    getInputStyle() {
+      const style = {};
+      if (typeof this.theInputWidth === 'number') {
+        style.width = this.theInputWidth + 'px';
+      }
+      if (typeof this.theInputWidth === 'string') {
+        style.width = this.theInputWidth;
+      }
+      return style;
+    },
     getError() {
       const error = this.withField.info.error;
       return error.join(',');
@@ -188,6 +202,11 @@ const UniAppFormItem = {
       if (this.viewMode) {
         arr.push('form-item-view');
       }
+
+      if (this.simple) {
+        arr.push('simple-view');
+      }
+
       return arr.join(' ');
     },
     getLabelClass() {
@@ -220,6 +239,10 @@ Vue.prototype.$$registerInput = function(name, component) {
     border-bottom: 1px solid #c8c7cc;
     padding-bottom: 4px;
 
+    &.simple-view {
+      border-bottom: none;
+    }
+
     & > .form-item-label {
       text-align: right;
       padding-right: 10px;
@@ -229,6 +252,13 @@ Vue.prototype.$$registerInput = function(name, component) {
         margin-left: 4px;
       }
     }
+  }
+
+  .form-item-label,
+  .form-item-value-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .form-item-error {

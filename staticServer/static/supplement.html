@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>补充材料</title>
+    <link rel="stylesheet" href="css/weui.min.css" />
+    <link rel="stylesheet" href="css/jquery-weui.min.css">
+    <link rel="stylesheet" href="css/style.css?v=1.1" />
+</head>
+<body>
+<div id="wrap" style="display: none">
+    <div class="weui-cells weui-cells_form">
+        <div class="weui-cell" style="align-items: flex-start">
+            <div class="weui-cell__hd"><label class="weui-label">审批结论</label></div>
+            <div class="weui-cell__bd">
+                <p style="font-size: 14px" id="firstCheckConclusion"></p>
+            </div>
+        </div>
+        <div class="weui-cell">
+            <div class="weui-uploader" style="width: 100%">
+                <div class="weui-uploader__hd">
+                    <p class="weui-uploader__title">附件查看</p>
+                    <div class="weui-uploader__info" style="text-align: right">
+                        <select id="imgSelect">
+                            <option value="5">补充材料</option>
+                            <option value="1">申请表</option>
+                            <option value="2">医保卡和身份证复印件</option>
+                            <option value="3">住院病志及小结</option>
+                            <option value="4">门诊病志及报告单</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="weui-uploader__bd" style="width: 100%">
+                    <ul class="weui-uploader__files" id="files"></ul>
+                </div>
+            </div>
+        </div>
+        <div class="weui-cell">
+            <div class="weui-uploader" style="width: 100%">
+                <div class="weui-uploader__hd">
+                    <p class="weui-uploader__title">上传补充材料</p>
+                </div>
+                <div class="weui-uploader__bd">
+                    <ul class="weui-uploader__files" id="uploaderFiles"></ul>
+                    <div class="weui-uploader__input-box">
+                        <input id="uploaderInput" class="weui-uploader__input" type="file" accept="image/*" multiple="" disabled>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div style="padding: 40px; display: flex; justify-content: space-around; align-items: center">
+        <a href="javascript:" class="weui-btn weui-btn_primary" id="upload" style="width: 120px; margin: 0;">上传</a>
+        <a href="javascript:" class="weui-btn weui-btn_primary" id="complete" style="width: 120px; margin: 0;">完成</a>
+    </div>
+    <div class="weui-gallery" id="gallery" style="display: none">
+        <i class="weui-icon-cancel" style="position: absolute; right: 10px; top: 10px; z-index: 5; color: #fff; font-size: 30px" id="closeGallery"></i>
+        <span class="weui-gallery__img" id="galleryImg" style="background-image: url(xxx);"></span>
+        <div class="weui-gallery__opr" style="display: none">
+            <a href="javascript:" class="weui-gallery__del" id="imgDel">
+                <i class="weui-icon-delete weui-icon_gallery-delete"></i>
+            </a>
+        </div>
+    </div>
+</div>
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery-weui.min.js"></script>
+<script src="js/common.js?v=1.1"></script>
+<script src="js/pages/supplement.js?v=1.2"></script>
+<script>
+    init(function(){
+        queryData()
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>问题认证</title>
+    <link rel="stylesheet" href="css/weui.min.css" />
+    <link rel="stylesheet" href="css/jquery-weui.min.css">
+    <link rel="stylesheet" href="css/style.css?v=1.1" />
+</head>
+<body>
+<div>
+    <p style="padding: 10px 10px 0px; color: #999">请回答以下与您最近一次门诊慢性病就诊相关的问题。</p>
+    <div class="weui-cells">
+        <p style="padding: 10px">问题一：请选择您最近一次门诊慢性病就诊的日期。</p>
+        <div class="weui-cell">
+            <div class="weui-cell__bd">
+                <input class="weui-input" type="date" id="queryDate">
+            </div>
+        </div>
+    </div>
+    <div class="weui-cells">
+        <p style="padding: 10px">问题二：请选择您最近一次门诊慢性病就诊的医院。</p>
+        <div class="weui-cell weui-cell_select">
+            <div class="weui-cell__bd">
+                <select class="weui-select" id="hospitalCode" style="width: 100%; display: block"></select>
+            </div>
+        </div>
+    </div>
+    <div class="weui-cells">
+        <p style="padding: 10px">问题三：请选择您最近一次门诊慢性病就诊的诊断疾病。</p>
+        <div class="weui-cell weui-cell_select">
+            <div class="weui-cell__bd">
+                <select class="weui-select" id="diseaseCode" style="width: 100%; display: block"></select>
+            </div>
+        </div>
+    </div>
+    <div style="padding: 40px">
+        <a href="javascript:" class="weui-btn weui-btn_primary" id="query">确认</a>
+    </div>
+</div>
+<div class="weui-msg" id="result" style="display: none; position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 5; background: #fff">
+    <div class="weui-msg__icon-area"><i class="weui-icon_msg" id="icon"></i></div>
+    <div class="weui-msg__text-area">
+        <h2 class="weui-msg__title" id="txt">实名认证成功！</h2>
+    </div>
+    <div style="padding: 40px">
+        <a href="javascript:" class="weui-btn weui-btn_primary" id="back">返回</a>
+    </div>
+</div>
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery-weui.min.js"></script>
+<script>
+// let ajaxUrl = 'http://192.168.43.165:8091/sicd/api/claim';
+let ajaxUrl = '/sicd/api/claim';
+let registInfo = JSON.parse(sessionStorage.registInfo);
+let openId = sessionStorage.openId;
+
+$.ajax({
+    type: 'GET',
+    dataType: 'json',
+    url: ajaxUrl + '/appinfo/queryHospitalInfoApp',
+    data: {},
+    success: function (res) {
+        if(res.response === 'error'){
+            $.toast(res.error, 'forbidden');
+        }else{
+            let html = '<option disabled selected value="">请选择</option>';
+            res.ok.forEach(item => {
+                html += '<option value="' + item.hospitalCode + '">' + item.hospitalName + '</option>'
+            })
+            $('#hospitalCode').html(html)
+        }
+    }
+})
+$.ajax({
+    type: 'GET',
+    dataType: 'json',
+    url: ajaxUrl + '/appinfo/queryDiseaseInfoApp',
+    data: {},
+    success: function (res) {
+        if(res.response === 'error'){
+            $.toast(res.error, 'forbidden');
+        }else{
+            let html = '<option disabled selected value="">请选择</option>';
+            res.ok.forEach(item => {
+                html += '<option value="' + item.diseaseCode + '">' + item.diseaseName + '</option>'
+            })
+            $('#diseaseCode').html(html)
+        }
+    }
+})
+
+let isAuth = false
+$('#query').on('click', () => {
+    let queryDate = $('#queryDate').val()
+    let hospitalCode = $('#hospitalCode').val()
+    let diseaseCode = $('#diseaseCode').val()
+    queryDate = queryDate.replace(/-/g, '')
+
+    if(!queryDate){
+        $.toast('请选择就诊的日期', 'forbidden');
+        return
+    }
+    if(!hospitalCode){
+        $.toast('请选择就诊的医院', 'forbidden');
+        return
+    }
+    if(!diseaseCode){
+        $.toast('请选择就诊的诊断疾病', 'forbidden');
+        return
+    }
+    $.showLoading()
+    $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: ajaxUrl + '/appinfo/answerQuestion?idCode=' + registInfo.idCode + '&name=' + registInfo.name + '&queryDate=' + queryDate + '&diseaseCode=' + diseaseCode + '&hospitalCode=' + hospitalCode,
+        success: function (res) {
+            if(res.response === 'error'){
+                $.hideLoading()
+                $.toast(res.error, 'forbidden');
+            }else{
+                isAuth = res.ok;
+                if(isAuth){
+                    regist()
+                }else{
+                    $.hideLoading()
+                    $('#result').show()
+                    $('#icon').addClass('weui-icon-warn')
+                    $('#txt').html('实名认证未通过！')
+                }
+            }
+        }
+    });
+})
+
+let regist = function(){
+    $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: ajaxUrl + '/appinfo/register?openId=' + sessionStorage.openId + '&name=' + registInfo.name + '&idCode=' + registInfo.idCode + '&telephone=' + registInfo.telephone,
+        success: function (res) {
+            $.hideLoading()
+            if(res.response === 'error'){
+                $.toast(res.error, 'forbidden');
+            }else{
+                $('#result').show()
+                $('#icon').addClass('weui-icon-success')
+                $('#txt').html('注册认证成功！')
+            }
+        }
+    });
+}
+$('#back').on('click', () => {
+    if(isAuth){
+        window.location.href = sessionStorage.backUrl
+    }else{
+        $('#result').hide()
+    }
+})
+
+</script>
+</body>
+</html>

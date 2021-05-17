@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>转发有礼</title>
+    <link rel="stylesheet" href="css/weui.min.css" />
+    <link rel="stylesheet" href="css/jquery-weui.min.css">
+    <link rel="stylesheet" href="css/style.css?v=1.1" />
+</head>
+<body>
+<div style="padding: 15px">
+    <h1 style="text-align:center; font-size: 20px; margin-bottom: 20px;">融盛保险-慢病服务平台“三月送好礼”活动,超值礼品,数量有限,先到先得!</h1>
+    <div style="line-height: 1.5; font-size: 16px">
+        <p style="margin-bottom: 15px; text-indent: 2em">关注“门慢服务”公众号并转发此推文至朋友圈可获得双重好礼相送，限时限量，恭候有缘人！</p>
+        <p style="background: url(img/gift.png) no-repeat left center; padding-left: 36px; line-height: 32px">好礼一：3MKN95口罩100元优惠券</p>
+        <img src="img/3m.png" alt="" style="display: block; width: 50%; margin: 0 auto;">
+        <p style="background: url(img/gift.png) no-repeat left center; padding-left: 36px; line-height: 32px">好礼二：阿芙产品50元无门槛优惠券</p>
+        <img src="img/afu.png" alt="" style="display: block; width: 50%; margin: 0 auto;">
+        <p style="margin-top: 20px; margin-bottom: 5px">操作流程：</p>
+        <p style="">1、扫描下方二维码并关注“门慢服务”公众号，通过公众号推送的链接转发此文至个人微信朋友圈。</p>
+        <p style="">2、点击公众号中“礼品领取请点击此处”链接领取代金券。</p>
+        <p style="">3、点击公众号中“礼品使用说明”链接，根据说明兑换代金券。</p>
+    </div>
+    <img src="img/qrcode.png" alt="" style="display: block; width: 80%; margin: 40px auto 80px">
+    <div id="getBtn" style="display: none; padding: 0 40px" id="getBtn">
+        <a href="sharePrizeGet.html" class="weui-btn weui-btn_primary" >去领取奖品</a>
+    </div>
+</div>
+
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery-weui.min.js"></script>
+<script src="js/jweixin-1.6.0.js"></script>
+<script>
+// let ajaxUrl = 'http://192.168.43.165:8091/sicd/api/claim';
+let ajaxUrl = '/sicd/api/claim';
+
+let getJssdk = function(){
+    let local = location.href.split('#')[0];
+    $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: ajaxUrl + '/appinfo/assemblyJsSdkData?url=' + local,
+        data: {},
+        success: function (res) {
+            if(res.response === 'error'){
+                $.toast(res.error, 'forbidden');
+            }else{
+                wx.config({
+                    debug: false,
+                    appId: res.ok.appId, // 必填，公众号的唯一标识
+                    timestamp: res.ok.timeStamp, // 必填，生成签名的时间戳
+                    nonceStr: res.ok.nonceStr, // 必填，生成签名的随机串
+                    signature: res.ok.signature,// 必填，签名
+                    jsApiList: [
+                        'onMenuShareTimeline'
+                    ]
+                });
+
+                wx.ready(function () {
+                    wx.onMenuShareTimeline({ 
+                        title: '融盛保险-慢病服务平台“三月送好礼”活动,超值礼品,数量有限,先到先得!', // 分享标题
+                        link: 'https://cdmgt-hd.living-space.cn/sicd/sharePrize.html', // 分享链接，该链接域名或路径必须与当前页面对应的公众号JS安全域名一致
+                        imgUrl: 'https://cdmgt-hd.living-space.cn/sicd/img/logo.jpg', // 分享图标
+                        success: function () {
+                            $('#getBtn').show()
+                        }
+                    })
+                });
+            }
+        }
+    });
+}
+getJssdk()
+</script>
+</body>
+</html>

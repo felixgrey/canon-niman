@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>修改注册信息</title>
+    <link rel="stylesheet" href="css/weui.min.css" />
+    <link rel="stylesheet" href="css/jquery-weui.min.css">
+    <link rel="stylesheet" href="css/style.css?v=1.1" />
+</head>
+<body>
+<div id="wrap">
+    <div class="weui-cells weui-cells_form">
+        <div class="weui-cell">
+            <div class="weui-cell__hd"><label class="weui-label">姓名</label></div>
+            <div class="weui-cell__bd">
+                <input id="name" class="weui-input" placeholder="填写姓名" autocomplete="off" />
+            </div>
+        </div>
+        <div class="weui-cell">
+            <div class="weui-cell__hd"><label class="weui-label">身份证号码</label></div>
+            <div class="weui-cell__bd">
+                <input id="idCode" class="weui-input" placeholder="填写身份证号码" autocomplete="off" maxlength="18" />
+            </div>
+        </div>
+        <div class="weui-cell">
+            <div class="weui-cell__hd"><label class="weui-label">手机号</label></div>
+            <div class="weui-cell__bd">
+                <input id="telephone" class="weui-input" placeholder="填写手机号" autocomplete="off" maxlength="11" />
+            </div>
+        </div>
+    </div>
+    <div style="padding: 40px">
+        <a href="javascript:" class="weui-btn weui-btn_primary" id="regist">修 改</a>
+    </div>
+</div>
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery-weui.min.js"></script>
+<script src="js/common.js?v=1.1"></script>
+<script>
+    let getRegistInfo = function(){
+        $.showLoading()
+        $.ajax({
+            type: 'GET',
+            dataType: 'json',
+            url: ajaxUrl + '/appinfo/getUserInfo?openId=' + sessionStorage.openId,
+            // data: {},
+            success: function (res) {
+                $.hideLoading()
+                if(res.response === 'error'){
+                    $.toast(res.error, 'forbidden');
+                }else{
+                    $('#name').val(res.ok.name)
+                    $('#idCode').val(res.ok.idCode)
+                    $('#telephone').val(res.ok.telephone)
+                }
+            }
+        });
+    }
+    if(sessionStorage.getItem('openId') && sessionStorage.getItem('openId') !== 'undefined'){
+        getRegistInfo()
+    }
+    $('#regist').on('click', function(){
+        let name = $('#name').val()
+        let idCode = $('#idCode').val()
+        let telephone = $('#telephone').val()
+        if(!name){
+            $.toast('姓名不能为空', 'forbidden');
+            return
+        }
+        if(!idCode){
+            $.toast('身份证号不能为空', 'forbidden');
+            return
+        }
+        let reg = /^[1-9]\d{5}(?:18|19|20)\d{2}(?:0[1-9]|10|11|12)(?:0[1-9]|[1-2]\d|30|31)\d{3}[\dXx]$/;
+        if(!reg.test(idCode)){
+            $.toast('身份证号格式不正确', 'forbidden');
+            return
+        }
+        if(!telephone){
+            $.toast('手机号不能为空', 'forbidden');
+            return
+        }
+        let reg2 = /^(?:(?:\+|00)86)?1[3-9]\d{9}$/;
+        if(!reg2.test(telephone)){
+            $.toast('手机号格式不正确', 'forbidden');
+            return
+        }
+
+        let editRegistInfo = {
+            name,
+            idCode,
+            telephone
+        }
+        sessionStorage.setItem('editRegistInfo', JSON.stringify(editRegistInfo))
+        window.location.href = 'editRegistAuth.html'
+    })
+</script>
+</body> 
+</html>

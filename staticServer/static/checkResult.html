@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>认定结果查询</title>
+    <link rel="stylesheet" href="css/weui.min.css" />
+    <link rel="stylesheet" href="css/jquery-weui.min.css">
+    <link rel="stylesheet" href="css/style.css?v=1.1" />
+</head>
+<body>
+<div id="wrap" style="display: none">
+    <div class="weui-cells" style="margin-top: 0">
+        <div class="weui-cell ">
+            <div class="weui-cell__bd">
+                <p>身份证号</p>
+            </div>
+            <div class="weui-cell__ft" id="idCode"></div>
+        </div>
+        <div class="weui-cell ">
+            <div class="weui-cell__bd">
+                <p>姓名</p>
+            </div>
+            <div class="weui-cell__ft" id="name"></div>
+        </div>
+        <div class="weui-cell ">
+            <div class="weui-cell__bd">
+                <p>开始日期</p>
+            </div>
+            <div class="weui-cell__ft" id="startDate"></div>
+        </div>
+        <div class="weui-cell ">
+            <div class="weui-cell__bd">
+                <p>终止日期</p>
+            </div>
+            <div class="weui-cell__ft" id="endDate"></div>
+        </div>
+        <div class="weui-cell ">
+            <div class="weui-cell__bd">
+                <p>疾病名称</p>
+            </div>
+            <div class="weui-cell__ft" id="diseaseName"></div>
+        </div>
+        <div class="weui-cell ">
+            <div class="weui-cell__bd">
+                <p>医院名称</p>
+            </div>
+            <div class="weui-cell__ft" id="hospitalName"></div>
+        </div>
+        <div class="weui-cell ">
+            <div class="weui-cell__bd">
+                <p>申请日期</p>
+            </div>
+            <div class="weui-cell__ft" id="applicationDate"></div>
+        </div>
+        <div class="weui-cell ">
+            <div class="weui-cell__bd">
+                <p>审批结论</p>
+            </div>
+            <div class="weui-cell__ft" id="approvalResultName"></div>
+        </div>
+    </div>
+</div>
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery-weui.min.js"></script>
+<script src="js/common.js?v=1.1"></script>
+<script>
+    let queryResult = function() {
+        $.showLoading();
+        $.ajax({
+            type: 'GET',
+            dataType: 'json',
+            url: ajaxUrl + '/appinfo/queryChronicDiseaseCheckResult?openId=' + sessionStorage.openId,
+            data: {},
+            success: function (res) {
+                $.hideLoading();
+                if (res.response === 'error') {
+                    $.toast(res.error, 'forbidden');
+                } else {
+                    $('#idCode').html(res.ok.idCode)
+                    $('#name').html(res.ok.name)
+                    $('#startDate').html(res.ok.startDate)
+                    $('#endDate').html(res.ok.endDate)
+                    $('#diseaseName').html(res.ok.diseaseName)
+                    $('#hospitalName').html(res.ok.hospitalName)
+                    $('#applicationDate').html(res.ok.applicationDate)
+                    $('#approvalResultName').html(res.ok.approvalResultName)
+                }
+            }
+        });
+    }
+    init(function(){
+        queryResult()
+    })
+</script>
+</body>
+</html>

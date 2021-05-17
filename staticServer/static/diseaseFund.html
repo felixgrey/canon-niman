@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>门慢花费查询</title>
+    <link rel="stylesheet" href="css/weui.min.css" />
+    <link rel="stylesheet" href="css/jquery-weui.min.css">
+    <link rel="stylesheet" href="css/style.css?v=1.1" />
+</head>
+<body>
+<div id="wrap" style="display: none">
+    <div class="weui-cells weui-cells_form">
+        <div class="weui-cell weui-cell_select weui-cell_select-after">
+            <div class="weui-cell__hd"><label class="weui-label">年份</label></div>
+            <div class="weui-cell__bd">
+                <Select id="year" class="weui-select" placeholder="填选择年份"></Select>
+            </div>
+        </div>
+        <div class="weui-cell weui-cell_select weui-cell_select-after">
+            <div class="weui-cell__hd"><label class="weui-label">月份</label></div>
+            <div class="weui-cell__bd">
+                <Select id="month" class="weui-select" placeholder="填选择月份">
+                    <option value="01">01</option>
+                    <option value="02">02</option>
+                    <option value="03">03</option>
+                    <option value="04">04</option>
+                    <option value="05">05</option>
+                    <option value="06">06</option>
+                    <option value="07">07</option>
+                    <option value="08">08</option>
+                    <option value="09">09</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                </Select>
+            </div>
+        </div>
+        <div class="weui-cell ">
+            <div class="weui-cell__hd">
+                <p>门慢总费用</p>
+            </div>
+            <div class="weui-cell__bd" style="text-align: right" id="totalMoney"></div>
+        </div>
+        <div class="weui-cell ">
+            <div class="weui-cell__hd">
+                <p>统筹支出金额</p>
+            </div>
+            <div class="weui-cell__bd" style="text-align: right" id="siMoney"></div>
+        </div>
+    </div>
+    <div style="padding: 40px">
+        <a href="javascript:" class="weui-btn weui-btn_primary" id="query">查询</a>
+    </div>
+</div>
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery-weui.min.js"></script>
+<script src="js/common.js?v=1.1"></script>
+<script>
+    let nowYear = new Date().getFullYear();
+    let yearOptions = ''
+    for (let i = 0; i < 20; i++) {
+        let year = nowYear - i;
+        yearOptions += '<option value="' + year + '">' + year + '</option>'
+    }
+    $('#year').html(yearOptions)
+    $('#year').val(nowYear)
+    $('#month').val(new Date().getMonth() + 1)
+
+    let queryFund = function() {
+        let queryDate = $('#year').val().toString() + $('#month').val().toString();
+        
+        $.showLoading();
+        $.ajax({
+            type: 'GET',
+            dataType: 'json',
+            url: ajaxUrl + '/appinfo/queryChronicDiseaseFund?openId=' + sessionStorage.openId + '&queryDate=' + queryDate,
+            data: {},
+            success: function (res) {
+                $.hideLoading();
+                if(res.response === 'error'){
+                    $.toast(res.error, 'forbidden');
+                }else{
+                    $('#totalMoney').html(res.ok.totalMoney + '元')
+                    $('#siMoney').html(res.ok.siMoney + '元')
+                }
+            }
+        });
+    }
+
+    $('#query').on('click', () => {
+        queryFund()
+    })
+
+    init()
+</script>
+</body>
+</html>

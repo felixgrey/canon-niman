@@ -1,0 +1,40 @@
+body, html {
+	-webkit-tap-highlight-color: transparent
+}
+body {
+    font-family: -apple-system-font, Helvetica Neue, Helvetica,sans-serif;
+    color: #333;
+    font-size: 16px;
+}
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+ul {
+	list-style: none;
+}
+.weui-uploader__file {
+    background-color: #ddd;
+}
+.weui-btn_primary {
+    background-color: #517ab2;
+}
+.weui-btn_primary:not(.weui-btn_disabled):active {
+    background-color: #456da5;
+}
+.weui-btn {
+    border-radius: 0;
+}
+.weui-toast--forbidden .weui-icon_toast {
+    color: #fff;
+    font-size: 40px;
+    margin-top: 24px;
+    margin-bottom: 10px;
+}
+.weui-toast--forbidden .weui-icon-warn:before {
+    content: '!'
+}
+.weui-toast--forbidden .weui-toast_content {
+    font-size: 14px
+}

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>礼品领取</title>
+    <link rel="stylesheet" href="css/weui.min.css" />
+    <link rel="stylesheet" href="css/jquery-weui.min.css">
+    <link rel="stylesheet" href="css/style.css?v=1.1" />
+</head>
+<body>
+<div class="weui-msg" id="success" style="display: none">
+    <img src="img/afu.png" alt="" style="display:block;width:50%;margin:0 auto 20px;">
+    <p id="alreadyGet" style="display: none;padding-bottom: 10px; color:crimson">您已领取过奖品！</p>
+    <div class="weui-msg__text-area" style="text-align: left">
+        <p class="weui-msg__title" style="margin-bottom: 10px; font-size: 16px">
+            奖品名称：<span id="name"></span>
+        </p>
+        <p class="weui-msg__title" style="font-size: 16px">
+            &emsp;兑换码：<span id="code"></span>
+        </p>
+    </div>
+    <div style="padding: 40px 40px 20px">
+        <a href="javascript:" class="weui-btn weui-btn_primary" id="getPrize" style="display: none">领 取</a>
+        <p style="padding-top: 10px"><a  style="color:cornflowerblue;text-decoration: underline" id="showIntro">奖品使用说明>></a></p>
+    </div>
+</div>
+<div class="weui-msg" id="done" style="display: none">
+    <div class="weui-msg__icon-area"><i class="weui-icon-warn weui-icon_msg-primary"></i></div>
+    <div class="weui-msg__text-area">
+        <h2 class="weui-msg__title">对不起！奖品已发放完。</h2>
+    </div>
+</div>
+<div id="introBox" style="display: none; position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 5; background-color: #fff; overflow-y: auto;">
+    <div class="weui-msg" style="padding-top: 25px">
+        <div class="weui-msg__text-area" style="text-align: left">
+            <p class="weui-msg__title" style="margin-bottom: 10px; font-size: 18px">
+                礼品使用说明：
+            </p>
+            <p class="weui-msg__desc" style="font-size: 16px; white-space: pre-wrap" id="intro"></p>
+        </div>
+    </div>
+    <div style="padding: 0 40px 20px">
+        <a href="javascript:" class="weui-btn weui-btn_primary" id="back">返 回</a>
+    </div>
+</div>
+
+
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery-weui.min.js"></script>
+<script>
+let ajaxUrl = '/sicd/api/claim';
+let getUrlParam= function(name) {
+    var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+    var r = window.location.search.substr(1).match(reg);
+    if (r != null) return unescape(r[2]);
+    return null;
+}
+let getCode = function (callback) {
+    if(sessionStorage.getItem('openId') && sessionStorage.getItem('openId') !== 'undefined') {
+        queryPrize(callback)
+        return false;
+    }
+    let code = getUrlParam('code');
+    let local = window.location.href;
+    let APPID = 'wx0abb5ad71c9c182d';
+    if (code == null || code === '') {
+        window.location.href = 'https://open.weixin.qq.com/connect/oauth2/authorize?appid=' + APPID + '&redirect_uri=' + encodeURIComponent(local) + '&response_type=code&scope=snsapi_base&state=#wechat_redirect'
+    } else {
+        getOpenId(code, callback)
+    }
+}
+let getOpenId = function(code, callback){
+    $.showLoading();
+    $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: ajaxUrl + '/appinfo/getOpenid?code=' + code,
+        data: {},
+        success: function (res) {
+            if(res.response === 'error'){
+                $.toast(res.error, 'forbidden');
+            }else{
+                sessionStorage.setItem("openId", res.ok);
+                queryPrize(callback)
+            }
+        }
+    });
+}
+let prizeObj = {}
+let queryPrize = function(){
+    $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: ajaxUrl + '/appinfo/queryPrizeReceive?openId=' + sessionStorage.openId + '&prizeType=2',
+        data: {},
+        success: function (res) {
+            $.hideLoading();
+            if(res.response === 'error'){
+                $.toast(res.error, 'forbidden');
+            }else{
+                if(res.ok.id){
+                    $('#success').show()
+                    $('#name').html(res.ok.prizeName)
+                    $('#code').html(res.ok.prizeCode)
+                    prizeObj = res.ok;
+
+                    if(res.ok.isReceive === '1'){
+                        $('#getPrize').hide()
+                        $('#alreadyGet').show()
+                    }
+                    if(res.ok.isReceive === '0'){
+                        $('#getPrize').show()
+                        $('#alreadyGet').hide()
+                    }
+                }else{
+                    $('#done').show()
+                }
+            }
+        }
+    });
+}
+
+getCode()
+
+$('#getPrize').on('click', () => {
+    $.showLoading();
+    $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: ajaxUrl + '/appinfo/updatePrizeReceive?openId=' + sessionStorage.openId + '&id=' + prizeObj.id,
+        data: {},
+        success: function (res) {
+            $.hideLoading();
+            if(res.response === 'error'){
+                $.toast(res.error, 'forbidden');
+            }else{
+                $.alert({
+                    title: '提示',
+                    text: '奖品领取成功！'
+                });
+                $('#getPrize').hide()
+            }
+        }
+    });
+})
+
+$('#showIntro').on('click', () => {
+    $('#intro').html(prizeObj.prizeExplain)
+    $('#introBox').show()
+})
+$('#back').on('click', () => {
+    $('#introBox').hide()
+})
+
+</script>
+</body>
+</html>
