@@ -6,10 +6,19 @@
         <uni-easyinput :type="subInputType" :value="theValue" :clearable="false" @input="onChange" @focus="onFocus" @blur="onBlur" :disabled="theDisabled" />
       </view>
       <view v-else-if="inputType === 'label'" class="form-item-value-label">
-        <text>{{ theValue }}</text>
+        <text>{{ renderLabelInput(theValue) }}</text>
       </view>
       <view v-else-if="component">
-        <component :is="component" :dataType="dataType" :theExtend="theExtend" :value="theValue" @change="onChange" @focus="onFocus" @blur="onBlur" :disabled="theDisabled"></component>
+        <component
+          :is="component"
+          :dataType="dataType"
+          :theExtend="theExtend"
+          :value="theValue"
+          @change="onChange"
+          @focus="onFocus"
+          @blur="onBlur"
+          :disabled="theDisabled"
+        ></component>
       </view>
       <view class="form-item-error">{{ getError() }}</view>
     </view>
@@ -39,24 +48,15 @@ function createProps(theProps, exceptFields = []) {
 // console.log(Vue.version)
 
 class FormForUniApp extends FormModel {
-  contextData = {};
-
   bindView(view) {
     this.onFormChange = () => {
       view.$forceUpdate();
     };
-
     return this;
   }
 
   isBlank(value, fieldInfo) {
     return super.isBlank(value, fieldInfo);
-  }
-
-  withField(...args) {
-    const data = super.withField(...args);
-    data.contextData = this.contextData;
-    return data;
   }
 
   transformSet(fieldInfo, [value]) {
@@ -92,70 +92,12 @@ const UniAppFormItem = {
     }
   },
   data() {
-    const { propsForBind, info, contextData } = this.withField;
-
-    let { label, inputType = 'Input', dataType = 'String', theExtend, required, formInstance, index } = info;
-    inputType = inputType.toLowerCase();
-
-    const { noneIfBlank, viewMode, simple } = theExtend;
-    const formConfig = formInstance.config;
-    const theLabelWidth = this.labelWidth || theExtend.labelWidth || formConfig.labelWidth || null;
-    const theInputWidth = this.inputWidth || theExtend.inputWidth || formConfig.inputWidth || null;
-
-    if (viewMode) {
-      inputType = 'label';
-    }
-
-    /*
-     * @property {String } 	type 							输入框的类型（默认text） password/text/textarea/..
-     * 	@value text				文本输入键盘
-     * 	@value textarea 	多行文本输入键盘
-     * 	@value password 	密码输入键盘
-     * 	@value number			数字输入键盘，注意iOS上app-vue弹出的数字键盘并非9宫格方式
-     * 	@value idcard			身份证输入键盘，信、支付宝、百度、QQ小程序
-     * 	@value digit			带小数点的数字键盘	，App的nvue页面、微信、支付宝、百度、头条、QQ小程序支持
-     */
-    const subInputTypeMap = {
-      inputnumber: 'number', // 兼容antd风格
-      textarea: 'textarea',
-      password: 'password',
-      number: 'number',
-      idcard: 'idcard',
-      digit: 'digit'
-    };
-    let subInputType = inputType === 'input' ? 'text' : null;
-    if (subInputTypeMap.hasOwnProperty(inputType)) {
-      subInputType = subInputTypeMap[inputType];
-      inputType = 'input';
-    }
-
-    let component;
-    if (!/^input$|^label$/g.test(inputType)) {
-      component = inputMap[inputType];
-    }
-
-    if (theExtend.component) {
-      component = theExtend.component;
-    }
-
-    if (component) {
-      inputType = '';
-    }
-
-    return {
-      ...propsForBind,
-      subInputType: subInputType,
-      theLabelWidth,
-      theInputWidth,
-      viewMode,
-      simple,
-      required,
-      label,
-      inputType,
-      dataType: dataType.toLowerCase(),
-      theExtend,
-      component
-    };
+    this.contextData = {};
+    this.initFormItem();
+    return {};
+  },
+  beforeUpdate() {
+    this.initFormItem();
   },
   computed: {
     notRender() {
@@ -173,6 +115,109 @@ const UniAppFormItem = {
     }
   },
   methods: {
+    renderLabelInput(value) {
+      if (!this.contextData || !this.withField) {
+        return value;
+      }
+
+      const {
+        theExtend: { data = null, labelField = 'label', valueField = 'value', format },
+        field
+      } = this.withField.info;
+
+      if (typeof format === 'function') {
+        return format(value, this.withField.info);
+      }
+
+      // 只有单选有能自动解码
+      if (!data || !Array.isArray(data) || Array.isArray(value)) {
+        return value;
+      }
+
+      const fieldContext = (this.contextData[field] = this.contextData[field] || {});
+      let { sourceData, decodeMap } = fieldContext;
+
+      if (sourceData !== data) {
+        fieldContext.sourceData = data;
+        decodeMap = fieldContext.decodeMap = {};
+        for (let item of data) {
+          decodeMap[item[valueField]] = item[labelField];
+        }
+      }
+
+      if (decodeMap.hasOwnProperty(value)) {
+        return decodeMap[value];
+      }
+      return value;
+    },
+    initFormItem() {
+      const { propsForBind, info, contextData } = this.withField;
+
+      let { label, inputType = 'Input', dataType = 'String', theExtend, required, formInstance, index } = info;
+      inputType = inputType.toLowerCase();
+
+      const { noneIfBlank, simple } = theExtend;
+      const formExtend = formInstance.config;
+      const theLabelWidth = this.labelWidth || theExtend.labelWidth || formExtend.labelWidth || null;
+      const theInputWidth = this.inputWidth || theExtend.inputWidth || formExtend.inputWidth || null;
+      const viewMode = formExtend.viewMode || theExtend.viewMode || formExtend.viewMode || false;
+
+      if (viewMode) {
+        inputType = 'label';
+      }
+
+      /*
+       * @property {String } 	type 							输入框的类型（默认text） password/text/textarea/..
+       * 	@value text				文本输入键盘
+       * 	@value textarea 	多行文本输入键盘
+       * 	@value password 	密码输入键盘
+       * 	@value number			数字输入键盘，注意iOS上app-vue弹出的数字键盘并非9宫格方式
+       * 	@value idcard			身份证输入键盘，信、支付宝、百度、QQ小程序
+       * 	@value digit			带小数点的数字键盘	，App的nvue页面、微信、支付宝、百度、头条、QQ小程序支持
+       */
+      const subInputTypeMap = {
+        inputnumber: 'number', // 兼容antd风格
+        textarea: 'textarea',
+        password: 'password',
+        number: 'number',
+        idcard: 'idcard',
+        digit: 'digit'
+      };
+      let subInputType = inputType === 'input' ? 'text' : null;
+      if (subInputTypeMap.hasOwnProperty(inputType)) {
+        subInputType = subInputTypeMap[inputType];
+        inputType = 'input';
+      }
+
+      let component;
+      if (!/^input$|^label$/g.test(inputType)) {
+        component = inputMap[inputType];
+      }
+
+      if (theExtend.component) {
+        component = theExtend.component;
+      }
+
+      if (component) {
+        inputType = '';
+      }
+
+      const mergeData = {
+        ...propsForBind,
+        subInputType: subInputType,
+        theLabelWidth,
+        theInputWidth,
+        viewMode,
+        simple,
+        required,
+        label,
+        inputType,
+        dataType: dataType.toLowerCase(),
+        theExtend,
+        component
+      };
+      Object.assign(this, mergeData);
+    },
     getLabelStyle() {
       const style = {};
       if (typeof this.theLabelWidth === 'number') {

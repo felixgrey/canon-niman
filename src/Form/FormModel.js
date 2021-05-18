@@ -29,6 +29,7 @@ class FormModel {
         disabled = false,
         keyField = 'id',
     } = config;
+    config.extend = config.extend || {};
     this.config = config;
     this.transformGet = transformGet;
     this.transformSet = transformSet;
@@ -449,6 +450,10 @@ class FormModel {
         throw new Error(`field ${field} not exist.`);
       }
     });
+    this.onFormChange();
+  }
+  updateExtend(extend = {}) {
+    Object.assign(this.config.extend, extend);
     this.onFormChange();
   }
 }
