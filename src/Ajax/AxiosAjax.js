@@ -6,13 +6,13 @@ const Ajax = require('./AabstractAjax.js');
 
 Ajax.defaultParam = {
   ...Ajax.defaultParam,
-  afterResponse: (response, info, instance) => {
+  afterResponse: (response, extend, instance) => {
     const {
       data,
       status,
     } = response || {};
 
-    if (info.submit) {
+    if (extend.submit) {
       return {
         status
       }
@@ -39,7 +39,7 @@ async function doFetch(param = {}) {
     beforeRequest,
     afterResponse,
 
-    info,
+    extend,
     instance,
   } = param;
 
@@ -59,7 +59,7 @@ async function doFetch(param = {}) {
     params,
     timeout: 0,
     cancelToken: source.token,
-  }, info, instance, axios, 'axios');
+  }, extend, instance, axios, 'axios');
 
   const result = await axios(config).catch((error) => {
     if (error.message === ABORT_SIGN) {
@@ -68,7 +68,7 @@ async function doFetch(param = {}) {
     throw new Error(error);
   });
 
-  return afterResponse(result, info, instance);
+  return afterResponse(result, extend, instance);
 };
 
 Ajax.doFetch = doFetch;

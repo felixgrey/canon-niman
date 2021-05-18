@@ -4,13 +4,13 @@ import Ajax from './AabstractAjax.js';
 Ajax.defaultParam = {
   ...Ajax.defaultParam,
   method: 'POST',
-  afterResponse: (response, info, instance) => {
+  afterResponse: (response, extend, instance) => {
     const {
       data,
       status,
     } = response || {};
 
-    if (info.submit) {
+    if (extend.submit) {
       return {
         status
       }
@@ -37,7 +37,7 @@ async function doFetch(param = {}) {
     beforeRequest,
     afterResponse,
 
-    info,
+    extend,
     instance,
   } = param;
 
@@ -54,7 +54,7 @@ async function doFetch(param = {}) {
     params,
     timeout: 0,
     cancelToken: null,
-  }, info, instance, uni, 'uni.request');
+  }, extend, instance, uni, 'uni.request');
 
   const result = await new Promise((resolve, reject) => {
     uni.request({
@@ -72,7 +72,7 @@ async function doFetch(param = {}) {
     throw new Error(error);
   });
 
-  return afterResponse(result, info, instance);
+  return afterResponse(result, extend, instance);
 };
 
 Ajax.doFetch = doFetch;

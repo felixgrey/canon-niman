@@ -20,8 +20,11 @@ class SearchModel {
     if (text.trim() === '') {
       return;
     }
-    this.searchIndex = setTimeout(() => {
-      this.onSearch(text);
+    this.searchIndex = setTimeout(async () => {
+      const result = await this.onSearch(text);
+      if (Array.isArray(result)) {
+        this.startSelect(this.value, result);
+      }
     }, this.config.frequency);
   }
 
@@ -62,6 +65,7 @@ class SearchModel {
   changeSelect(value) {
     if (!this.config.muti) {
       this.tempSelected = [value];
+      this.selectDone();
     } else {
       const index = this.tempSelected.indexOf(value);
       if (index === -1) {
@@ -84,7 +88,17 @@ class SearchModel {
     });
   }
 
-  startSelect(value = [], data = [], config = {}, _isInit) {
+  getOption(useItem = false) {
+    if (useItem) {
+      return [...this.data];
+    }
+    return this.data.map(item => [
+      item[this.config.labelField],
+      item[this.config.valueField],
+    ]);
+  }
+
+  startSelect(value = this.value, data = [], config = {}, _isInit) {
     this.searchText = '';
     this.setValue(value);
     this.tempSelected = [...this.value];

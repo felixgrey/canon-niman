@@ -44,7 +44,9 @@ class Ajax {
     return true;
   }
 
-  async fetch(param = {}, info = {}) {
+  fakeFetch = null;
+
+  async fetch(param = {}) {
     if (this.destroyed) {
       return;
     }
@@ -73,6 +75,8 @@ class Ajax {
 
       beforeRequest,
       afterResponse,
+
+      extend,
     } = param;
 
     if (isNvl(abortKey)) {
@@ -129,14 +133,18 @@ class Ajax {
       params,
       beforeRequest,
       afterResponse,
-      info,
+      extend,
       instance: this,
     };
 
     onFetch && onFetch(param);
     let result = ifErrorValue;
     try {
-      result = await Ajax.doFetch(newParam);
+      if (typeof this.fakeFetch === 'function') {
+        result = await this.fakeFetch(newParam);
+      } else {
+        result = await Ajax.doFetch(newParam);
+      }
       onSuccess(result);
     } catch (e) {
       onError(e);
@@ -173,6 +181,7 @@ Ajax.defaultParam = {
   onError: none,
   beforeRequest: same,
   afterResponse: same,
+  extend: {},
 };
 
 Ajax.same = same;
