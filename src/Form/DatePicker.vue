@@ -1,7 +1,7 @@
 <template>
 	<view>
 		<uni-datetime-picker type="date" :value="value" 
-      :returnType="getReturnType()" @change="v => $emit('change', v)"/>
+      :returnType="this.dataType" @change="v => $emit('change', v)"/>
 	</view>
 </template>
 
@@ -30,9 +30,6 @@
 			return {};
 		},
     methods:{
-      getReturnType() {
-        return this.dataType === 'number' ? 'timestamp': 'string';
-      },
     }
 	}
 </script>

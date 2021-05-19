@@ -28,6 +28,7 @@
 <script>
 import Vue from 'vue';
 import FormModel from './FormModel.js';
+import { formatDate } from '@/uni_modules/uni-dateformat/components/uni-dateformat/date-format.js';
 
 const inputMap = {};
 
@@ -122,14 +123,21 @@ const UniAppFormItem = {
 
       const {
         theExtend: { data = null, labelField = 'label', valueField = 'value', format },
-        field
+        field,
+        dataType
       } = this.withField.info;
 
       if (typeof format === 'function') {
         return format(value, this.withField.info);
       }
 
-      // 只有单选有能自动解码
+      // 时间戳解码
+      if (dataType === 'timestamp') {
+        const formatRule = typeof format === 'string' ? format : 'yyyy-MM-dd';
+        return formatDate(value, formatRule);
+      }
+
+      // 单选解码
       if (!data || !Array.isArray(data) || Array.isArray(value)) {
         return value;
       }

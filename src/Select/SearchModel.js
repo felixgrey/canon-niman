@@ -3,6 +3,8 @@ const defaultConfig = {
   valueField: 'value',
   muti: false,
   frequency: 500,
+  data: [],
+  value: undefined,
 };
 
 class SearchModel {
@@ -11,8 +13,7 @@ class SearchModel {
       ...defaultConfig,
       ...config,
     };
-
-    this.startSelect([], [], this.config, true);
+    this.startSelect(this.config.value, this.config.data || [], this.config, true);
   }
 
   onInput(text) {
