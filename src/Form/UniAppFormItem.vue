@@ -65,7 +65,7 @@ class FormForUniApp extends FormModel {
     if (value !== null && typeof value === 'object') {
       const { target, preventDefault, stopPropagation } = value;
 
-      // 通过三个属性判断是否是事件,如果是，取值
+      // 通过三个属性判断是否是事件，如果是，取target.value值
       if (target && preventDefault && stopPropagation) {
         value = target.value;
       }
@@ -276,7 +276,7 @@ export default UniAppFormItem;
 
 Vue.prototype.$$Form = FormForUniApp;
 Vue.component('form-item', UniAppFormItem);
-Vue.prototype.$$registerInput = function(name, component) {
+Vue.$$registerInput = Vue.prototype.$$registerInput = function(name, component) {
   inputMap[name.toLocaleLowerCase()] = component;
 };
 </script>
