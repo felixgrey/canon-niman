@@ -78,6 +78,7 @@ async function doFetch(param = {}) {
 Ajax.doFetch = doFetch;
 Vue.prototype.$$Ajax = Ajax;
 
+export default Ajax;
 export {
   doFetch
 }

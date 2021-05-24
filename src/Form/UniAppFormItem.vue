@@ -29,12 +29,13 @@
 <script>
 import Vue from 'vue';
 import FormModel from './FormModel.js';
+import { createIdcardChecker, createMobileChecker } from './classicRules.js';
 import { formatDate } from '@/uni_modules/uni-dateformat/components/uni-dateformat/date-format.js';
 
 const inputMap = {};
 
-function isBlank(v) {
-  return v === undefined || v === null || new String(v).trim() === '';
+function isBlank(v, nvl = false, array = false) {
+  return v === undefined || v === null || (!nvl && new String(v).trim() === '') || (array && Array.isArray(v) && v.length === 0);
 }
 
 function createProps(theProps, exceptFields = []) {
@@ -49,6 +50,27 @@ function createProps(theProps, exceptFields = []) {
 
 // console.log(Vue.version)
 
+const checkIdCard = createIdcardChecker();
+const checkMobile = createMobileChecker();
+
+const typeCheckRules = {
+  idcard: {
+    rule: checkIdCard,
+    msg: '身份证格式不正确'
+  },
+  mobile: {
+    rule: checkMobile,
+    msg: '手机格式不正确'
+  }
+};
+
+export function registerTypeChecker(typeName, rule, err) {
+  typeCheckRules[typeName] = {
+    rule,
+    err
+  };
+}
+
 class FormForUniApp extends FormModel {
   bindView(view) {
     this.onFormChange = () => {
@@ -59,6 +81,45 @@ class FormForUniApp extends FormModel {
 
   isBlank(value, fieldInfo) {
     return super.isBlank(value, fieldInfo);
+  }
+
+  /*
+    添加身份证验证、手机号验证
+  */
+  async _checkField(field, index) {
+    const pass = await super._checkField(field, index);
+
+    let { dataType } = this.fieldMap[field];
+    let value = (this.formData[index] || {})[field];
+
+    if (isBlank(dataType) || isBlank(value, true, true)) {
+      return pass;
+    }
+
+    const fieldState = this._getFieldState(index, field);
+    // 兼容数组值类型
+    value = [].concat(value);
+    dataType = dataType.toLowerCase();
+
+    const { rule, msg = '错误的输入' } = typeCheckRules[dataType] || {};
+
+    if (rule) {
+      let theTypePass = true;
+      for (let v of value) {
+        if (!rule(v)) {
+          theTypePass = false;
+          break;
+        }
+      }
+
+      if (!theTypePass) {
+        fieldState.error.push(msg);
+        this.onFormChange();
+        return false;
+      }
+    }
+
+    return pass;
   }
 
   transformSet(fieldInfo, [value]) {
@@ -123,41 +184,56 @@ const UniAppFormItem = {
       }
 
       let {
-        theExtend: { data = null, labelField = 'label', valueField = 'value', format },
+        theExtend: { data = null, labelField = 'label', valueField = 'value', format, split = ',' },
         field,
-        dataType
+        dataType,
+        valueIsArray
       } = this.withField.info;
 
       if (typeof format === 'function') {
         return format(value, this.withField.info);
       }
 
-      // 时间戳解码
-      if (dataType === 'timestamp') {
-        const formatRule = typeof format === 'string' ? format : 'yyyy-MM-dd';
-        return formatDate(value, formatRule);
-      }
-
-      // 单选解码
-      if (!data || !Array.isArray(data) || Array.isArray(value)) {
+      // 只有时间和选择解码
+      if (isBlank(value) || dataType !== timestamp || (!data || !Array.isArray(data))) {
         return value;
       }
 
-      const fieldContext = (this.contextData[field] = this.contextData[field] || {});
-      let { sourceData, decodeMap } = fieldContext;
+      const isArray = valueIsArray || Array.isArray(value);
+      value = [].concat(value);
+      let labels;
 
-      if (sourceData !== data) {
-        fieldContext.sourceData = data;
-        decodeMap = fieldContext.decodeMap = {};
-        for (let item of data) {
-          decodeMap[item[valueField]] = item[labelField];
+      // 时间戳解码
+      if (dataType === 'timestamp') {
+        const formatRule = typeof format === 'string' ? format : 'yyyy-MM-dd';
+        labels = value.map(v => {
+          return formatDate(v, formatRule);
+        });
+      } else {
+        const fieldContext = (this.contextData[field] = this.contextData[field] || {});
+        let { sourceData, decodeMap } = fieldContext;
+
+        if (sourceData !== data) {
+          fieldContext.sourceData = data;
+          decodeMap = fieldContext.decodeMap = {};
+          for (let item of data) {
+            decodeMap[item[valueField]] = item[labelField];
+          }
         }
+
+        labels = value.map(v => {
+          if (decodeMap.hasOwnProperty(v)) {
+            return decodeMap[v];
+          }
+          return v;
+        });
       }
 
-      if (decodeMap.hasOwnProperty(value)) {
-        return decodeMap[value];
+      if (isArray) {
+        return labels.join(split);
       }
-      return value;
+
+      return labels[0];
     },
     initFormItem() {
       const { propsForBind, info, contextData } = this.withField;

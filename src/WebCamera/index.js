@@ -151,20 +151,29 @@ export default class WebCamera {
         offsetHeight,
       } = this.container;
 
-      if (!constraints.hasOwnProperty('video')) {
-        constraints.video = {};
+      const newConstraints = {
+        ...constraints,
       }
-      if (typeof constraints.video === 'object') {
-        if (!constraints.video.hasOwnProperty('width')) {
-          constraints.video.width = offsetWidth;
-        }
-        if (!constraints.video.hasOwnProperty('height')) {
-          constraints.video.height = offsetHeight;
+
+      if (!newConstraints.hasOwnProperty('video')) {
+        newConstraints.video = {};
+      } else if (typeof constraints.video === 'object') {
+        newConstraints.video = {
+          ...constraints.video,
         }
       }
 
-      this.constraints = constraints;
-      this.stream = await getUserMedia(constraints);
+      if (typeof newConstraints.video === 'object') {
+        if (!newConstraints.video.hasOwnProperty('width')) {
+          newConstraints.video.width = offsetWidth;
+        }
+        if (!newConstraints.video.hasOwnProperty('height')) {
+          newConstraints.video.height = offsetHeight;
+        }
+      }
+
+      this.constraints = newConstraints;
+      this.stream = await getUserMedia(newConstraints);
 
       this.video = document.createElement('video');
       this.video.style.width = '100%';
