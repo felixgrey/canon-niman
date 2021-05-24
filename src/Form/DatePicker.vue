@@ -1,6 +1,6 @@
 <template>
 	<view>
-		<uni-datetime-picker type="date" :value="value" 
+		<uni-datetime-picker :type="type" :value="value" 
       :returnType="this.dataType" @change="v => $emit('change', v)"/>
 	</view>
 </template>
@@ -11,7 +11,7 @@
 		name:"DatePicker",
     props:{
       value: {
-        type: [String, Number],
+        type: [String, Number, Array],
         default: undefined
       },
       disabled: {
@@ -29,6 +29,14 @@
 		data() {
 			return {};
 		},
+    computed:{
+      type() {
+        let {
+          type = 'date'
+        } = this.theExtend;
+        return type;
+      }
+    },
     methods:{
     }
 	}

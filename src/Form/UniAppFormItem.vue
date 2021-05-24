@@ -14,6 +14,7 @@
           :dataType="dataType"
           :theExtend="theExtend"
           :value="theValue"
+          :valueIsArray="valueIsArray"
           @change="onChange"
           @focus="onFocus"
           @blur="onBlur"
@@ -65,7 +66,7 @@ class FormForUniApp extends FormModel {
     if (value !== null && typeof value === 'object') {
       const { target, preventDefault, stopPropagation } = value;
 
-      // 通过三个属性判断是否是事件，如果是，取target.value值
+      // 通过三个属性判断是否是事件,如果是，取值
       if (target && preventDefault && stopPropagation) {
         value = target.value;
       }
@@ -121,7 +122,7 @@ const UniAppFormItem = {
         return value;
       }
 
-      const {
+      let {
         theExtend: { data = null, labelField = 'label', valueField = 'value', format },
         field,
         dataType
@@ -161,7 +162,7 @@ const UniAppFormItem = {
     initFormItem() {
       const { propsForBind, info, contextData } = this.withField;
 
-      let { label, inputType = 'Input', dataType = 'String', theExtend, required, formInstance, index } = info;
+      let { label, inputType = 'Input', dataType = 'String', valueIsArray, theExtend, required, formInstance, index } = info;
       inputType = inputType.toLowerCase();
 
       const { noneIfBlank, simple } = theExtend;
@@ -220,7 +221,8 @@ const UniAppFormItem = {
         required,
         label,
         inputType,
-        dataType: dataType.toLowerCase(),
+        dataType,
+        valueIsArray,
         theExtend,
         component
       };
@@ -344,6 +346,7 @@ Vue.$$registerInput = Vue.prototype.$$registerInput = function(name, component) 
     position: relative;
     line-height: 32px;
     flex-grow: 1;
+    width: 100%;
   }
 }
 </style>

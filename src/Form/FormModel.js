@@ -1,3 +1,16 @@
+function checkType(dataType) {
+  const result = {
+    dataType: 'string',
+    isArray: false,
+  };
+  result.dataType = dataType.trim().toLowerCase();
+  if (/\[\]$/.test(dataType)) {
+    result.isArray = true;
+  }
+  result.dataType = result.dataType.replace('[]', '');
+  return result;
+}
+
 function isDiff(a, b) {
   if (Number.isNaN(a) || Number.isNaN(b)) {
     return !(Number.isNaN(a) && Number.isNaN(b));
@@ -206,7 +219,7 @@ class FormModel {
       label = '',
       initValue,
       defaultValue,
-      dataType = 'String',
+      dataType = 'string',
       inputType = 'Input',
       required = false,
       autoCheck = false,
@@ -241,6 +254,9 @@ class FormModel {
     const fieldDisabled = (typeof fieldInfo.disabled === 'function') ?
       fieldInfo.disabled(value, record, index, this.formData) : fieldInfo.disabled;
     const disabled = this.formState.isDisabled || fieldDisabled;
+
+    const checkedDataType = checkType(dataType);
+
     return {
       propsForBind: {
         disabled,
@@ -275,7 +291,8 @@ class FormModel {
         isInit: fieldState.isInit,
         error: fieldState.error,
         required: theRequired,
-        dataType,
+        dataType: checkedDataType.dataType,
+        valueIsArray: checkedDataType.isArray,
         inputType,
         theExtend,
         formInstance: this,
@@ -291,7 +308,11 @@ class FormModel {
   recordIndexList() {
     return this.formData.map((a, i) => i);
   }
-  resetData = (indexList, fields) => {
+  resetData = (...args) => {
+    console.error('resetData has deprecated , plase use resetFormData instead of resetData');
+    return this.resetFormData(...args)
+  }
+  resetFormData = (indexList, fields) => {
     if (!Array.isArray(indexList)) {
       indexList = this.recordIndexList();
     }
