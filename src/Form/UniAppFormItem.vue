@@ -190,16 +190,24 @@ const UniAppFormItem = {
         valueIsArray
       } = this.withField.info;
 
+      const isArray = valueIsArray || Array.isArray(value);
+
       if (typeof format === 'function') {
         return format(value, this.withField.info);
       }
 
-      // 只有时间和选择解码
-      if (isBlank(value) || dataType !== timestamp || (!data || !Array.isArray(data))) {
+      if (isBlank(value)) {
         return value;
       }
 
-      const isArray = valueIsArray || Array.isArray(value);
+      // 只有时间和选择解码
+      if (dataType !== 'timestamp' && !Array.isArray(data)) {
+        if (isArray) {
+          return [].concat(value).join(split);
+        }
+        return value;
+      }
+
       value = [].concat(value);
       let labels;
 

@@ -1,0 +1,52 @@
+.form-vi-button {
+  $button-large-width: 100px;
+  $button-large-height: 100px;
+  
+  $button-small-width: 100px;
+  $button-small-height: 100px;
+  
+  $button-mini-width: 100px;
+  $button-mini-height: 100px;
+  
+  $button-lang-width: 100px;
+  $button-short-width: 100px;
+  
+  &.primary {
+  }
+
+  &.warn {
+  }
+
+  &.danger {
+  }
+
+  &.disabled,
+  &[disabled] {
+  }
+
+  &.mini {
+  }
+
+  &.small {
+  }
+
+  &.large {
+  }
+
+  &.short {
+  }
+
+  &.lang {
+  }
+}
+
+.form-vi-button-group {
+}
+
+.form-vi-button-row {
+}
+
+.form-vi-button-panel {
+  .fixed-bottom {
+  }
+}

@@ -1,0 +1,19 @@
+.form-vi-radio-group {
+  & > .radio {
+  }
+}
+
+.form-vi-check-group {
+  & > .check {
+  }
+}
+
+.form-vi-radio-group,
+.form-vi-check-group {
+  & > .checked {
+  }
+
+  & > .disabled,
+  & > [disabled] {
+  }
+}

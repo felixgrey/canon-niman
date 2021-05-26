@@ -33,7 +33,8 @@ function deleteNull(data) {
 class FormModel {
   constructor(fields = [], config = {}) {
     const {
-      initData = {},
+      initFormData,
+        initData = {}, // 过时属性
         transformGet = this.transformGet,
         transformSet = this.transformSet,
         isBlank = this.isBlank,
@@ -52,7 +53,7 @@ class FormModel {
     this.keyField = keyField;
     this._initFormState();
     this.setFormFields(fields);
-    this.setFormData(initData, true);
+    this.setFormData(initFormData || initData, true);
     this.setDisabled(disabled, true);
   }
   recordsState = new WeakMap();
