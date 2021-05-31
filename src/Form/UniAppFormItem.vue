@@ -21,7 +21,7 @@
           :disabled="theDisabled"
         ></component>
       </view>
-      <view class="form-item-error">{{ getError() }}</view>
+      <view :class="errorClass">{{ getError() }}</view>
     </view>
   </view>
 </template>
@@ -157,12 +157,19 @@ const UniAppFormItem = {
   data() {
     this.contextData = {};
     this.initFormItem();
-    return {};
+
+    return {
+      decodeData: undefined
+    };
   },
   beforeUpdate() {
     this.initFormItem();
   },
   computed: {
+    errorClass() {
+      const { viewMode } = this.withField.info.theExtend || {};
+      return viewMode ? 'form-item-error inline-error' : 'form-item-error';
+    },
     notRender() {
       const { propsForBind, info } = this.withField;
       if (info.notExisted || info.theExtend.hidden || (info.theExtend.noneIfBlank && isBlank(propsForBind.value))) {
@@ -184,7 +191,7 @@ const UniAppFormItem = {
       }
 
       let {
-        theExtend: { data = null, labelField = 'label', valueField = 'value', format, split = ',' },
+        theExtend: { labelField = 'label', valueField = 'value', format, split = '，' },
         field,
         dataType,
         valueIsArray
@@ -201,7 +208,7 @@ const UniAppFormItem = {
       }
 
       // 只有时间和选择解码
-      if (dataType !== 'timestamp' && !Array.isArray(data)) {
+      if (dataType !== 'timestamp' && !Array.isArray(this.decodeData)) {
         if (isArray) {
           return [].concat(value).join(split);
         }
@@ -221,10 +228,10 @@ const UniAppFormItem = {
         const fieldContext = (this.contextData[field] = this.contextData[field] || {});
         let { sourceData, decodeMap } = fieldContext;
 
-        if (sourceData !== data) {
-          fieldContext.sourceData = data;
+        if (sourceData !== this.decodeData) {
+          fieldContext.sourceData = this.decodeData;
           decodeMap = fieldContext.decodeMap = {};
-          for (let item of data) {
+          for (let item of this.decodeData) {
             decodeMap[item[valueField]] = item[labelField];
           }
         }
@@ -248,12 +255,28 @@ const UniAppFormItem = {
 
       let { label, inputType = 'Input', dataType = 'String', valueIsArray, theExtend, required, formInstance, index } = info;
       inputType = inputType.toLowerCase();
+      const { noneIfBlank, simple, data } = theExtend;
 
-      const { noneIfBlank, simple } = theExtend;
+      theExtend = {
+        ...theExtend
+      };
+
       const formExtend = formInstance.config;
       const theLabelWidth = this.labelWidth || theExtend.labelWidth || formExtend.labelWidth || null;
       const theInputWidth = this.inputWidth || theExtend.inputWidth || formExtend.inputWidth || null;
       const viewMode = formExtend.viewMode || theExtend.viewMode || formExtend.viewMode || false;
+
+      if (data instanceof Promise) {
+        if (data !== this.lastDataPromise) {
+          this.lastDataPromise = data;
+          data.then(d => {
+            this.decodeData = d;
+            this.$forceUpdate();
+          });
+        }
+      } else {
+        this.decodeData = data;
+      }
 
       if (viewMode) {
         inputType = 'label';
@@ -293,6 +316,10 @@ const UniAppFormItem = {
 
       if (component) {
         inputType = '';
+      }
+
+      if (data) {
+        theExtend.data = this.decodeData;
       }
 
       const mergeData = {
@@ -370,7 +397,7 @@ Vue.$$registerInput = Vue.prototype.$$registerInput = function(name, component) 
 <style lang="scss">
 .form-item-for-uni-app {
   display: flex;
-  height: 32px;
+  min-height: 32px;
   padding: 2px;
   padding-bottom: 22px;
 
@@ -378,8 +405,19 @@ Vue.$$registerInput = Vue.prototype.$$registerInput = function(name, component) 
     border-bottom: 1px solid #c8c7cc;
     padding-bottom: 4px;
 
+    $simple-height: 20px;
+
     &.simple-view {
       border-bottom: none;
+      padding: 2px;
+
+      &,
+      & > .form-item-label,
+      & > .form-item-inputer {
+        height: $simple-height;
+        line-height: $simple-height;
+        font-size: 14px;
+      }
     }
 
     & > .form-item-label {
@@ -408,6 +446,10 @@ Vue.$$registerInput = Vue.prototype.$$registerInput = function(name, component) 
     line-height: 22px;
     color: #dd524d;
     font-size: 12px;
+
+    &.inline-error {
+      bottom: 4px;
+    }
   }
 
   uni-input {

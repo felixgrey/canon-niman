@@ -34,12 +34,11 @@ export default {
       myValue: this.value,
       labelField,
       valueField,
-      data,
+      data: [...data],
       muti,
       placeholder,
       recordValue,
       onSearch,
-      data,
       decodeMap
     };
   },
@@ -73,16 +72,25 @@ export default {
       if (disabled) {
         return;
       }
-      const callback = this.recordValue
-        ? item => {
-            this.myValue = item;
-            this.$emit('change', this.myValue);
-          }
-        : item => {
-            this.myValue = item[valueField];
-            this.$emit('change', this.myValue);
-          };
+      
+      const callback = item => {
+        item = {
+          ...item
+        };
+        
+        if (!this.decodeMap[item[valueField]]) {
+          this.decodeMap[item[valueField]] = item;
+          data.push(item);
+        }
 
+        if (this.recordValue) {
+          this.myValue = item;
+        } else {
+          this.myValue = item[valueField];
+        }
+        this.$emit('change', this.myValue);
+      }
+      
       let textValue = this.myValue;
       if (this.recordValue && this.myValue) {
         textValue = this.myValue[this.valueField];
