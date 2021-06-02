@@ -94,11 +94,32 @@ const inputMap = {
   Label: function(theProps) {
     let value = theProps.propsForBind.value;
     const {
-      split = ','
+      split = ',',
+      data,
+      labelField = 'label',
+      valueField = 'value',
     } = theProps.theExtend;
     
+    let map;
+    if(Array.isArray(data)) {
+      map = data.reduce((map,item) => {
+        map[item[valueField]] = item[labelField];
+        return map;
+      },{})
+    }
+
     if (Array.isArray(value)) {
+      if (map) {
+        value = value.map(v => {
+          if (map.hasOwnProperty(v)) {
+            return map[v];
+          }
+          return v;
+        })
+      }
       value = value.join(split);
+    } else if (map && map.hasOwnProperty(value)) {
+      value = map[value];
     }
     
     return <div className="label-input">
@@ -151,7 +172,27 @@ class FormForAntd extends FormModel {
     data.contextData = this.contextData;
     return data;
   }
-
+  
+  updateFields(newFields = []) {
+    const fields = [...this.fields];
+    
+    [].concat(newFields).forEach(newFieldInfo => {
+      const {
+        field
+      } = newFieldInfo;
+      
+      const fieldInfo = this.fieldMap[field];
+      
+      if (fieldInfo) {
+        Object.assign(fieldInfo, newFieldInfo);
+      } else {
+        throw new Error(`field ${field} not exist.`);
+      }
+    });
+    
+    this.onFormChange();
+  }
+  
   transformSet(fieldInfo, [value]) {
     //antd组件 onChange事件参数可能是值也可能是事件
     if (value !== null && typeof value === 'object') {
@@ -199,7 +240,7 @@ function FormItem(theProps) {
     return null;
   }
 
-  // 组件按照已定义、默认次序寻找
+  // 组件按照已定义、自定义、默认次序寻找
   const Inputer = inputMap[inputType] || inputMap.Input;
   
   const formConfig = formInstance.config;

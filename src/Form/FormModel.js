@@ -34,14 +34,14 @@ class FormModel {
   constructor(fields = [], config = {}) {
     const {
       initFormData,
-        initData = {}, // 过时属性
-        transformGet = this.transformGet,
-        transformSet = this.transformSet,
-        isBlank = this.isBlank,
-        onFormChange = Function.prototype,
-        blankErrInfo = '请输入{{label}}',
-        disabled = false,
-        keyField = 'id',
+      initData = {}, // 过时属性
+      transformGet = this.transformGet,
+      transformSet = this.transformSet,
+      isBlank = this.isBlank,
+      onFormChange = Function.prototype,
+      blankErrInfo = '请输入{{label}}',
+      disabled = false,
+      keyField = 'id',
     } = config;
     config.extend = config.extend || {};
     this.config = config;
@@ -149,6 +149,7 @@ class FormModel {
         fieldState.originValue = record[field];
       }
       fieldState.isInit = isInit || false;
+      fieldState.error = [];
       record[field] = value;
       this.onFormChange();
     }
@@ -268,19 +269,19 @@ class FormModel {
           }
           const value = this.transformSet(fieldInfo, args);
           this._changeValue(index, field, value);
-          onChange(value, args);
+          onChange(value, index, args);
         },
         onFocus: (...args) => {
           // 获得焦点的时候清除错误信息
           fieldState.error = [];
           // 设置当前数据
           this.formState.currentIndex = index;
-          onFocus(...args);
+          onFocus(index, args);
           this.onFormChange();
         },
         onBlur: (...args) => {
           if (autoCheck) {
-            onBlur(...args);
+            onBlur(index, args);
             this._checkField(field, index);
           }
         }
@@ -477,6 +478,10 @@ class FormModel {
   updateExtend(extend = {}) {
     Object.assign(this.config.extend, extend);
     this.onFormChange();
+  }
+  clearError(field, index = 0) {
+    const recordState = this._initRecordState(index, field);
+    recordState && (recordState.fields[field].error = []) && this.onFormChange();
   }
 }
 FormModel.deleteNull = deleteNull;

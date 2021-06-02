@@ -421,7 +421,7 @@ Vue.$$registerInput = Vue.prototype.$$registerInput = function(name, component) 
     }
 
     & > .form-item-label {
-      text-align: right;
+      // text-align: right;
       padding-right: 10px;
 
       &::after {
