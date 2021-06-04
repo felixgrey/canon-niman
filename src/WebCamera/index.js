@@ -40,32 +40,17 @@ export function dataURLtoBlob(dataurl) {
   })
 }
 
+let fileIndex = 1;
 
-function getFileName(blob, index) {
-  let name = 'file' + index;
-  let ext = '';
-  const type = blob.type || '';
-  if (type.includes('video')) {
-    name = 'video' + index;
-    ext = '.mp4';
-  } else if (type.includes('image')) {
-    name = 'image' + index;
-    ext = '.png';
-  } else if (type.includes('audio')) {
-    name = 'audio' + index;
-    ext = '.mp3';
-  }
-  return `${name}${ext}`;
-}
-
-export function toFiles(blobs, callback = getFileName) {
+export function toFiles(blobs, preName = `file_${fileIndex++}`) {
   return blobs.map((blob, i) => {
-    return new File([blob], getFileName(blob, i));
+    const [mime = 'file', suffix = ''] = (blob.type || '').split('/');
+    return new File([blob], `${preName}_${mime}_${i}.${suffix}`);
   });
 }
 
-export function dataURLtoFile(base64) {
-  return toFiles([dataURLtoBlob(base64)])[0];
+export function dataURLtoFile(base64, name) {
+  return toFiles([dataURLtoBlob(base64)], name)[0];
 }
 
 //访问用户媒体设备的兼容方法
