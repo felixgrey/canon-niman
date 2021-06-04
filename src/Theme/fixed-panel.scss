@@ -1,0 +1,30 @@
+.form-vi-fixed-panel{
+  position: fixed;
+  z-index: -1;
+  
+  &.bottom {
+    
+  }
+  
+  &.top {
+    
+  }
+  
+  &.left {
+    
+  }
+  
+  &.right {
+    
+  }
+  
+  &.menu-button {
+    width: 24px;
+    height: 24px;
+    
+    &.cycle {
+      border-radius: 50%;
+    }
+
+  }
+}

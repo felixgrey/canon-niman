@@ -149,12 +149,14 @@ class FormModel {
         fieldState.originValue = record[field];
       }
       fieldState.isInit = isInit || false;
-      fieldState.error = [];
       record[field] = value;
       this.onFormChange();
     }
   }
-  async _checkField(field, index) {
+  async checkField(field, index = 0) {
+    if (!this.config.isList) {
+      index = 0;
+    }
     let pass = true;
     const fieldInfo = this.fieldMap[field];
     const record = this.formData[index];
@@ -269,20 +271,20 @@ class FormModel {
           }
           const value = this.transformSet(fieldInfo, args);
           this._changeValue(index, field, value);
-          onChange(value, index, args);
+          onChange(value, args);
         },
         onFocus: (...args) => {
           // 获得焦点的时候清除错误信息
           fieldState.error = [];
           // 设置当前数据
           this.formState.currentIndex = index;
-          onFocus(index, args);
+          onFocus(...args);
           this.onFormChange();
         },
         onBlur: (...args) => {
           if (autoCheck) {
-            onBlur(index, args);
-            this._checkField(field, index);
+            onBlur(...args);
+            this.checkField(field, index);
           }
         }
       },
@@ -355,7 +357,7 @@ class FormModel {
     const count = this.formData.length;
     for (let index = 0; index < count; index++) {
       for (let fieldInfo of fields) {
-        pass = await this._checkField(fieldInfo.field, index) && pass;
+        pass = await this.checkField(fieldInfo.field, index) && pass;
       }
     }
     return pass;
@@ -478,10 +480,6 @@ class FormModel {
   updateExtend(extend = {}) {
     Object.assign(this.config.extend, extend);
     this.onFormChange();
-  }
-  clearError(field, index = 0) {
-    const recordState = this._initRecordState(index, field);
-    recordState && (recordState.fields[field].error = []) && this.onFormChange();
   }
 }
 FormModel.deleteNull = deleteNull;

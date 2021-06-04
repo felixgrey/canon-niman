@@ -1,12 +1,22 @@
-/*
-  必须在点击前创建元素，否则在移动端浏览器可能不触发onchange
-*/
-const upload = document.createElement('input');
-upload.type = 'file';
-upload.style.display = 'none';
-document.body.appendChild(upload);
+const uploadId = 'upload-' + Date.now();
 
 export default async function webUpload(multiple = true, extend = {}) {
+
+  /*
+    每次都用新元素，防止属性污染。
+  */
+  const upload = document.createElement('input');
+  upload.type = 'file';
+  upload.style.display = 'none';
+  upload.id = uploadId;
+
+  const oldUpload = document.querySelector('#' + uploadId);
+  if (oldUpload) {
+    document.body.replaceChild(upload, oldUpload);
+  } else {
+    document.body.appendChild(upload);
+  }
+
   // 多选
   upload.multiple = multiple;
 
@@ -19,8 +29,6 @@ export default async function webUpload(multiple = true, extend = {}) {
   // "image/*" "video/* "audio/*"
   if (accept) {
     upload.accept = accept;
-  } else {
-    delete upload.accept;
   }
 
   // 激活摄像头
@@ -29,8 +37,6 @@ export default async function webUpload(multiple = true, extend = {}) {
       capture = "camera";
     }
     upload.capture = capture;
-  } else {
-    delete upload.capture;
   }
 
   let resolve$2;
@@ -38,8 +44,15 @@ export default async function webUpload(multiple = true, extend = {}) {
 
   upload.onchange = function() {
     resolve$2(upload.files);
+    document.body.removeChild(upload);
   };
-  upload.click();
+
+  /*
+    先加入DOM，再触发事件，否则可能不响应；
+  */
+  setTimeout(() => {
+    upload.click();
+  }, 20);
 
   let myFiles = await next;
   myFiles = Array.from(myFiles);
