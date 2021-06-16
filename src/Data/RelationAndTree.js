@@ -1,10 +1,10 @@
 const defaultConfig = {
-  keyField = 'id', // 主键
-  parentKeyField = 'parent', // 外键
-  childrenField = 'children', // 子节点
-  rootField = 'root', // 是否是根
-  leafField = 'leaf', // 是否是叶子
-  pathField = 'path', // 路径
+  keyField: 'id', // 主键
+  parentKeyField: 'parent', // 外键
+  childrenField: 'children', // 子节点
+  rootField: 'root', // 是否是根
+  leafField: 'leaf', // 是否是叶子
+  pathField: 'path', // 路径
 };
 
 function _mixConfig(config = {}) {
@@ -109,7 +109,7 @@ function fromList(list = [], config) {
 function fromTree(tree = {}, config) {
   config = _mixConfig(config);
   const map = _traceNode(Object.assign({}, tree), config);
-  const list = Array.from(map.Values());
+  const list = Array.from(map.values());
   const newTree = map.get(tree[config.keyField]);
 
   return {
@@ -119,7 +119,10 @@ function fromTree(tree = {}, config) {
   }
 }
 
-export {
-  fromList,
-  fromTree,
-}
+// export {
+//   fromList,
+//   fromTree,
+// }
+
+exports.fromList = fromList;
+exports.fromTree = fromTree;
