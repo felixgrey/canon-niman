@@ -43,10 +43,10 @@
 .form-vi-button-group {
 }
 
-.form-vi-button-row {
-}
-
 .form-vi-button-panel {
+  .form-vi-button:not(:first-child){
+    margin-left: 8px;
+  }
   .fixed-bottom {
   }
 }

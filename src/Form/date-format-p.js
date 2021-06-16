@@ -20,10 +20,19 @@ const parser = {
 	M: (dateObj) => {
 		return dateObj.month
 	},
+  // 按照moment格式
+  DD: (dateObj) => {
+  	return pad(dateObj.day)
+  },
+  D: (dateObj) => {
+  	return dateObj.day
+  },
 	dd: (dateObj) => {
+    console.error('please use DD instead');
 		return pad(dateObj.day)
 	},
 	d: (dateObj) => {
+    console.error('please use D instead');
 		return dateObj.day
 	},
 	hh: (dateObj) => {

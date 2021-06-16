@@ -34,7 +34,7 @@ class FormModel {
   constructor(fields = [], config = {}) {
     const {
       initFormData,
-      initData = {}, // 过时属性
+      initData = {}, // 过时属性，用initFormData替代
       transformGet = this.transformGet,
       transformSet = this.transformSet,
       isBlank = this.isBlank,
@@ -117,7 +117,10 @@ class FormModel {
   }
   _initRecordState(index, field) {
     if (index < 0 || index >= this.formData.length || !this.fieldMap[field]) {
-      return;
+      console.error(`error index or field, index=${index},field=${field}`);
+      return {
+        fields: [],
+      };
     }
     const record = this.formData[index];
     let state = this.recordsState.get(record);
@@ -140,23 +143,21 @@ class FormModel {
   }
   _changeValue(index, field, value, isInit = false) {
     const fieldState = this._getFieldState(index, field);
-    if (!fieldState) {
+    const record = this.formData[index];
+    if (!record) {
       return;
     }
-    const record = this.formData[index];
     if (isDiff([value], record[field])) {
       if (!fieldState.hasOwnProperty('originValue')) {
         fieldState.originValue = record[field];
       }
       fieldState.isInit = isInit || false;
+      fieldState.error = [];
       record[field] = value;
       this.onFormChange();
     }
   }
-  async checkField(field, index = 0) {
-    if (!this.config.isList) {
-      index = 0;
-    }
+  async _checkField(field, index) {
     let pass = true;
     const fieldInfo = this.fieldMap[field];
     const record = this.formData[index];
@@ -186,7 +187,7 @@ class FormModel {
     return pass;
   }
   _getFieldState(index, field) {
-    return this._initRecordState(index, field).fields[field];
+    return this._initRecordState(index, field).fields[field] || {};
   }
   withField = (fieldName, renderExtend = {}, index = 0) => {
     if (typeof renderExtend === 'number') {
@@ -224,6 +225,7 @@ class FormModel {
       initValue,
       defaultValue,
       dataType = 'string',
+      valueType = dataType,
       inputType = 'Input',
       required = false,
       autoCheck = false,
@@ -271,20 +273,20 @@ class FormModel {
           }
           const value = this.transformSet(fieldInfo, args);
           this._changeValue(index, field, value);
-          onChange(value, args);
+          onChange(value, index, args);
         },
         onFocus: (...args) => {
           // 获得焦点的时候清除错误信息
           fieldState.error = [];
           // 设置当前数据
           this.formState.currentIndex = index;
-          onFocus(...args);
+          onFocus(index, args);
           this.onFormChange();
         },
         onBlur: (...args) => {
           if (autoCheck) {
-            onBlur(...args);
-            this.checkField(field, index);
+            onBlur(index, args);
+            this._checkField(field, index);
           }
         }
       },
@@ -337,9 +339,6 @@ class FormModel {
           continue;
         }
         const fieldState = this._getFieldState(index, field);
-        if (!fieldState) {
-          continue;
-        }
         if (fieldState.hasOwnProperty('originValue')) {
           const originValue = fieldState.originValue;
           Reflect.deleteProperty(fieldState, 'originValue');
@@ -357,7 +356,7 @@ class FormModel {
     const count = this.formData.length;
     for (let index = 0; index < count; index++) {
       for (let fieldInfo of fields) {
-        pass = await this.checkField(fieldInfo.field, index) && pass;
+        pass = await this._checkField(fieldInfo.field, index) && pass;
       }
     }
     return pass;
@@ -480,6 +479,10 @@ class FormModel {
   updateExtend(extend = {}) {
     Object.assign(this.config.extend, extend);
     this.onFormChange();
+  }
+  clearError(field, index = 0) {
+    const recordState = this._initRecordState(index, field);
+    recordState && (recordState.fields[field].error = []) && this.onFormChange();
   }
 }
 FormModel.deleteNull = deleteNull;
