@@ -30,7 +30,7 @@
 import Vue from 'vue';
 import FormModel from './FormModel.js';
 import { createIdcardChecker, createMobileChecker } from './classicRules.js';
-import { formatDate } from '@/uni_modules/uni-dateformat/components/uni-dateformat/date-format.js';
+import { formatDate } from './date-format-g';
 
 const inputMap = {};
 
