@@ -3,10 +3,31 @@ class Oscillator {
   willDelete = [];
   pulseHandleSet = new Set();
 
-  emitPulse() {
+  constructor() {
+    this.doWhile();
+  }
+
+  doWhile() {
+    const emitPulse = () => {
+      setTimeout(() => {
+        this.emitPulse();
+        emitPulse();
+      }, 20);
+    }
+    emitPulse();
+  }
+
+  getDifference() {
     // const now = Date.now();
     // const difference = this.lastTime ? now - this.lastTime : 0;
     // this.lastTime = now;
+    // return difference;
+
+    return 20;
+  }
+
+  emitPulse() {
+    const difference = this.getDifference();
 
     const {
       pulseHandleSet,
@@ -15,7 +36,7 @@ class Oscillator {
     } = this;
 
     for (let callback of pulseHandleSet) {
-      callback(20);
+      callback(difference);
     }
 
     for (let callback of willDelete) {
@@ -40,15 +61,6 @@ class Oscillator {
 
 const commonOscillator = new Oscillator();
 
-function emitPulse() {
-  setTimeout(() => {
-    commonOscillator.emitPulse();
-    emitPulse();
-  }, 20);
-}
-emitPulse();
-
-
 class Timer {
   constructor(opt = {}) {
     const {
@@ -60,6 +72,9 @@ class Timer {
     this.oscillator = oscillator;
     this.interval = interval;
     this.pulseHandle = (difference) => {
+      if (!this.running) {
+        return;
+      }
       this.stackTime += difference;
       if (this.stackTime >= this.interval) {
         this.stackTime = 0;

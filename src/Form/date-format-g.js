@@ -74,7 +74,7 @@ function getDate(time) {
 	}
 }
 
-export function formatDate(date, format = 'yyyy/MM/dd hh:mm:ss') {
+export function formatDate(date, format = 'yyyy/MM/DD hh:mm:ss') {
 	if (!date && date !== 0) {
 		return ''
 	}
@@ -88,7 +88,7 @@ export function formatDate(date, format = 'yyyy/MM/dd hh:mm:ss') {
 		second: date.getSeconds(),
 		millisecond: date.getMilliseconds()
 	}
-	const tokenRegExp = /yyyy|yy|MM|M|dd|d|hh|h|mm|m|ss|s|SSS|SS|S/
+	const tokenRegExp = /yyyy|yy|MM|M|DD|D|dd|d|hh|h|mm|m|ss|s|SSS|SS|S/
 	let flag = true
 	let result = format
 	while (flag) {
