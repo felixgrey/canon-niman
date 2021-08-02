@@ -128,14 +128,12 @@ class FormModel {
       state = {
         fields: {},
         error: [],
-        isSelected: false,
       };
       this.recordsState.set(record, state);
     }
     if (field !== undefined) {
       state.fields[field] = state.fields[field] || {
         isInit: true,
-        isSelected: false,
         error: [],
       };
     }
@@ -308,7 +306,7 @@ class FormModel {
   setFormData = (data = {}, _isInit = false) => {
     this.recordsState = new WeakMap();
     this._initFormState();
-    this.formData = [].concat(data);
+    this.formData = [].concat(data).map(item => Object.assign({}, item));
     (!_isInit) && this.onFormChange();
   }
   recordIndexList() {
@@ -366,48 +364,47 @@ class FormModel {
   }
   getFormData = () => {
     if (!this.config.isList) {
-      return {
-        ...this.formData[0]
-      };
+      return this.formData[0];
     }
-    return [...this.formData];
+    return this.formData;
   }
-  _changeSelect(indexList = [], flag = true) {
-    indexList = [].concat(indexList);
-    for (let index of indexList) {
-      this._initRecordState(index).isSelected = flag;
+  _isNew(record) {
+    return (this.recordsState.get(record) || {}).isNew;
+  }
+  checkChange = (record = this.formData[0], _index) => {
+    if (_index === undefined) {
+      _index = this.formData.indexOf(record);
     }
-    this.onFormChange();
+    if (_index === -1) {
+      return false
+    }
+    if (this._isNew(record)) {
+      return true;
+    }
+    for (let item of this.fields) {
+      const fieldState = this._getFieldState(index, item.field);
+      if (fieldState.hasOwnProperty('originValue')) {
+        return true;
+      }
+    }
+    return false;
   }
-  _changeSelectByKey(keyList = [], flag) {
-    const indexList = this.formData
-      .map((record, index) => keyList.includes(record[this.keyField]) ? index : null)
-      .filter(index => index !== null);
-    this._changeSelect(indexList, flag);
-  }
-  selectRecordsByKey = (keyList) => {
-    this._changeSelectByKey(keyList, true);
-  }
-  unselectRecordsByKey = (keyList) => {
-    this._changeSelectByKey(keyList, false);
-  }
-  selectRecords = (indexList) => {
-    this._changeSelect(indexList, true);
-  }
-  unselectRecords = (indexList = []) => {
-    this._changeSelect(indexList, false);
-  }
-  selectAll = () => {
-    this.selectRecords(this.recordIndexList());
-  }
-  selectNone = () => {
-    this.unSelectRecords(this.recordIndexList());
+  getChangedData = (includeNew = true) => {
+    let changedData = this.formData.filter(this.checkChange);
+    if (!includeNew) {
+      changedData = changedData.filter(record => !this._isNew(record));
+    }
+    if (!this.config.isList) {
+      return changedData[0] || null;
+    }
+    return changedData;
   }
   insert(data = {}, index = this.formData.length) {
     if (!this.config.isList) {
       return;
     }
     this.formData.splice(index, 0, data);
+    this._initRecordState(index).isNew = true;
     this.onFormChange();
   }
   remove(index = null) {
@@ -417,41 +414,8 @@ class FormModel {
     this.formData.splice(index, 1);
     this.onFormChange();
   }
-  _getAboutSelected(flag = true) {
-    const indexList = [];
-    const recordList = this.formData
-      .filter((record, index) => {
-        if (this._initRecordState(index).isSelected === flag) {
-          indexList.push(index);
-          return true;
-        }
-        return false;
-      });
-    return [indexList, recordList];
-  }
-  getSelected = (justIndex = false) => {
-    const [indexList, recordList] = this._getAboutSelected(true);
-    if (justIndex === true) {
-      return indexList;
-    }
-    return recordList;
-  }
-  getUnselected = (justIndex = false) => {
-    const [indexList, recordList] = this._getAboutSelected(false);
-    if (justIndex === true) {
-      return indexList;
-    }
-    return recordList;
-  }
-  getCurrent = (justIndex = false) => {
-    const {
-      currentIndex
-    } = this.formState;
-
-    if (justIndex) {
-      return currentIndex;
-    }
-    return this.formData[currentIndex];
+  getCurrent = () => {
+    return this.formData[this.formState.currentIndex];
   }
   setFieldsValue = (record = {}, index = 0) => {
     if (!this.config.isList) {

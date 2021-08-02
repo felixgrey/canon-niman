@@ -63,6 +63,7 @@ class Ajax {
       method,
       data,
       params,
+      rest,
       dataType,
       abortKey,
       ifErrorValue = null,
@@ -99,6 +100,12 @@ class Ajax {
 
     if (method === 'GET' && isNvl(params)) {
       params = data;
+    }
+
+    if (!isNvl(rest) && typeof rest === 'object') {
+      for (let key in rest) {
+        url = url.replace(`/:${key}`, `/:${encodeURIComponent(rest[key])}`);
+      }
     }
 
     if (dataType === 'form' && !(data instanceof FormData)) {

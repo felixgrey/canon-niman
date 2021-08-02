@@ -19,14 +19,26 @@ else
 for 
 ...(Array,Map,Pojo)
 
-String Number Boolean Array Dict Function Any
 
-/*: if ($a,$$global) { :*/
-/*=... =*/
-
-/*<*/ example code /*>*/
 
 /*@name*/ code /*@*/
+
+====================================
+
+/*#name {} #/ 锚点或配置
+
+
+/*@name*/ code /*@*/代码块
+
+代码块内
+/*: if (){ :*/
+
+
+/*: } :*/
+
+/*:=value*/ 输出值
+
+/*eg:*/ example code /*:eg*/
 
 ====================================
 
@@ -62,6 +74,7 @@ params
 result
 
 /*$params = 'a' : String *$/
+/*@import@*/
 
 /*@sql*/
   select /*...$result*/ from aaa 
@@ -111,3 +124,14 @@ const declare = {
 }
 
 buildCode({});
+
+
+
+----------------------------------
+state
+
+action
+
+reducer
+
+map
