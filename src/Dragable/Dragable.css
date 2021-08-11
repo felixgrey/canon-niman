@@ -1,0 +1,13 @@
+
+.dragable-container {
+  user-select: none;
+}
+
+.dragable-container .dragable-target {
+  cursor: move;
+}
+
+.dragable-container,
+.dragable-container .dragable-target {
+  /* transition: transform 0.5s; */
+}
