@@ -1,8 +1,0 @@
-/* 
-  放在React组件里
-*/
-async asyncSetState(state) {
-  return new Promise(resolve => {
-    this.setState(state, resolve);
-  })
-}
