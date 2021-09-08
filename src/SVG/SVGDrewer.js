@@ -9,6 +9,10 @@ const theDefaultStyle = {
   strokeDasharray: null,
 };
 
+function createENS(tag) {
+  return document.createElementNS("http://www.w3.org/2000/svg", tag);
+}
+
 export default class SVGDrewer {
   constructor(arg = {}) {
     let {
@@ -32,6 +36,16 @@ export default class SVGDrewer {
     this.createSVG();
   }
 
+  methods = [
+    "addG",
+    "drewText",
+    "drewCircle",
+    "drewLine",
+    "drewPolygon",
+    "drewPolyline",
+    "remove",
+  ];
+
   createSVG() {
 
     const {
@@ -41,7 +55,7 @@ export default class SVGDrewer {
       logicHeight,
     } = this.plottingScale;
 
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const svg = createENS("svg");;
 
     svg.setAttribute('width', `${width}px`);
     svg.setAttribute('height', `${height}px`);
@@ -51,7 +65,7 @@ export default class SVGDrewer {
     return svg;
   }
 
-  addG(style = {}) {
+  addG = (style = {}) => {
     const {
       id,
       autoAdd,
@@ -60,7 +74,7 @@ export default class SVGDrewer {
       ...style
     };
 
-    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const g = createENS("g");;
 
     if (id) {
       g.setAttribute('id', id);
@@ -71,7 +85,7 @@ export default class SVGDrewer {
     return g;
   }
 
-  drewText([x, y], str = '', style = {}) {
+  drewText = ([x, y], str = '', style = {}) => {
 
     const {
       id,
@@ -84,8 +98,7 @@ export default class SVGDrewer {
       ...style
     };
 
-    const text = document
-      .createElementNS("http://www.w3.org/2000/svg", "text");
+    const text = createENS("text");
 
     if (id) {
       text.setAttribute('id', id);
@@ -104,7 +117,7 @@ export default class SVGDrewer {
     return text;
   }
 
-  drewCircle([x, y], radius = 8, style = {}) {
+  drewCircle = ([x, y], radius = 8, style = {}) => {
     const {
       id,
       width,
@@ -116,8 +129,7 @@ export default class SVGDrewer {
       ...style
     };
 
-    const circle = document
-      .createElementNS("http://www.w3.org/2000/svg", "circle");
+    const circle = createENS("circle");
 
     if (id) {
       circle.setAttribute('id', id);
@@ -135,7 +147,7 @@ export default class SVGDrewer {
     return circle;
   }
 
-  drewLine([x1, y1], [x2, y2], style = {}) {
+  drewLine = ([x1, y1], [x2, y2], style = {}) => {
     const {
       id,
       width,
@@ -148,8 +160,7 @@ export default class SVGDrewer {
       ...style
     };
 
-    const line = document
-      .createElementNS("http://www.w3.org/2000/svg", "line");
+    const line = createENS("line");
 
     if (id) {
       line.setAttribute('id', id);
@@ -214,7 +225,7 @@ export default class SVGDrewer {
     }
   }
 
-  drewPolygon(points = [], style = {}) {
+  drewPolygon = (points = [], style = {}) => {
     const {
       id,
       width,
@@ -226,8 +237,7 @@ export default class SVGDrewer {
       ...style
     };
 
-    const polygon = document
-      .createElementNS("http://www.w3.org/2000/svg", "polygon");
+    const polygon = createENS("polygon");
 
     if (id) {
       polygon.setAttribute('id', id);
@@ -252,7 +262,7 @@ export default class SVGDrewer {
     return polygon;
   }
 
-  drewPolyline(points = [], style = {}) {
+  drewPolyline = (points = [], style = {}) => {
     const {
       id,
       width,
@@ -264,8 +274,7 @@ export default class SVGDrewer {
       ...style
     };
 
-    const polyline = document
-      .createElementNS("http://www.w3.org/2000/svg", "polyline");
+    const polyline = createENS("polyline");
 
     if (id) {
       polyline.setAttribute('id', id);
@@ -290,6 +299,9 @@ export default class SVGDrewer {
     return polyline;
   }
 
-
-
+  remove = (dom = []) => {
+    [].concat(dom).forEach(d => {
+      this.svg.removeChild(d);
+    });
+  }
 }

@@ -7,11 +7,11 @@ export default class PlottingScale {
     const {
       width = 5000, // 像素宽度
         logicWidth = 10000, // 逻辑宽度
-        widthDialStep = 200, // 逻辑标尺精度
+        widthDialStep = null, // 逻辑标尺精度
 
         height = 200, // 像素高度
         logicHeight = 100, // 逻辑高度
-        heightDialStep = 10, // 逻辑标尺精度
+        heightDialStep = null, // 逻辑标尺精度
 
         dialLengthPx = 10, // 刻度线长（像素）
 
@@ -20,23 +20,28 @@ export default class PlottingScale {
 
         zeroXpx = width / 2,
         zeroYpx = height / 2,
+
+        widthDialStepPx = width / 200,
+        heightDialStepPx = height / 10,
     } = arg;
 
     Object.assign(this, {
       width,
       logicWidth,
       widthDialStep,
+      widthDialStepPx,
 
       height,
       logicHeight,
       heightDialStep,
+      heightDialStepPx,
+
+      zeroX,
+      zeroXpx,
+      zeroY,
+      zeroYpx,
 
       dialLengthPx,
-
-      zeroXpx,
-      zeroYpx,
-      zeroX,
-      zeroY
     });
 
     if (zeroX === null) {
@@ -51,11 +56,21 @@ export default class PlottingScale {
       this.zeroYpx = this.heightLogicToPx(zeroY);
     }
 
-    this.widthStepCount = logicWidth / widthDialStep;
-    this.widthDialStepPx = width / this.widthStepCount;
+    if (widthDialStep === null) {
+      this.widthDialStep = this.widthPxToLogic(widthDialStepPx);
+    } else {
+      this.widthDialStepPx = this.widthLogicToPx(widthDialStep);
+    }
 
-    this.heightStepCount = logicHeight / heightDialStep;
-    this.heightDialStepPx = height / this.heightStepCount;
+    if (heightDialStep === null) {
+      this.heightDialStep = this.heightPxToLogic(heightDialStepPx);
+    } else {
+      this.heightDialStepPx = this.heightLogicToPx(heightDialStep);
+    }
+
+
+    this.widthStepCount = logicWidth / this.widthDialStep;
+    this.heightStepCount = logicHeight / this.heightDialStep;
 
     this.xDialLength = this.heightPxToLogic(dialLengthPx);
     this.yDialLength = this.widthPxToLogic(dialLengthPx);
@@ -71,12 +86,12 @@ export default class PlottingScale {
 
     this.xDialPositions = [];
     for (let i = 0; i <= this.widthStepCount; i++) {
-      this.xDialPositions.push(i * widthDialStep - this.zeroX);
+      this.xDialPositions.push(i * this.widthDialStep - this.zeroX);
     }
 
     this.yDialPositions = [];
     for (let i = 0; i <= this.heightStepCount; i++) {
-      this.yDialPositions.push(i * heightDialStep - this.zeroY);
+      this.yDialPositions.push(i * this.heightDialStep - this.zeroY);
     }
   }
 

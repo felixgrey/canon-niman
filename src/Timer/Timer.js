@@ -70,29 +70,75 @@ class Timer {
     } = opt;
 
     this.oscillator = oscillator;
-    this.interval = interval;
+
+    this.initInterval(interval);
+    this.initStackTime();
+    this.initPulseHandle(pulseHandle);
+
     this.pulseHandle = (difference) => {
       if (!this.running) {
         return;
       }
-      this.stackTime += difference;
-      if (this.stackTime >= this.interval) {
-        this.stackTime = 0;
-        pulseHandle();
-      }
+
+      this.intervalNames.forEach(name => {
+        const stackTime = (this.stackTimeMap[name] += difference);
+        const interval = this.intervalMap[name];
+        const pulseHandle = this.pulseHandleMap[name];
+        if (stackTime >= interval && pulseHandle) {
+          this.stackTimeMap[name] = 0;
+          pulseHandle(name, stackTime);
+          this.pulseHandleMap.$$default(name, stackTime);
+        }
+      });
     };
   }
 
+  initInterval(interval = this.interval) {
+    if (typeof interval === 'number') {
+      interval = {
+        $$NoName: interval,
+      };
+    }
+    this.intervalMap = interval;
+    this.intervalNames = Object.keys(this.intervalMap);
+  }
+
+  initStackTime() {
+    this.stackTimeMap = this.intervalNames.reduce((map, key) => {
+      map[key] = 0;
+      return map;
+    }, {});
+  }
+
+  initPulseHandle(pulseHandle) {
+    if (typeof pulseHandle === 'function') {
+      pulseHandle = {
+        $$NoName: pulseHandle,
+        $$default: pulseHandle,
+      };
+    }
+    this.pulseHandleMap = {
+      $$default: Function.prototype,
+      ...pulseHandle
+    };
+  }
+
+  interval = 20;
+  intervalNames = [];
   running = false;
+  pulseHandleMap = {};
 
   setInterval(interval = this.interval) {
-    this.interval = interval;
-    this.stackTime = 0;
+    this.initInterval(interval);
+    this.initStackTime();
     return this;
   }
 
   run() {
-    this.stackTime = 0;
+    if (this.running) {
+      return this;
+    }
+    this.initStackTime();
     this.running = true;
     this.oscillator.addPulseHandle(this.pulseHandle);
     return this;

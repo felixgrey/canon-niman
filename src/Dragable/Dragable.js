@@ -4,12 +4,24 @@ const defaultOp = {
   dragEndHandle: Function.prototype,
   zoomHandle: Function.prototype,
   zoomStep: 1,
-  maxZoom: 10,
-  minZoom: 1,
+  zoomStepScale: 0.5,
+  maxZoom: 8,
+  minZoom: 0.125,
   zoomAble: true,
   wheelAble: true,
   hasBoundary: false,
 };
+
+function inDom(dom, dom2) {
+  if (dom === dom2) {
+    return true;
+  }
+  const parentNode = dom.parentNode;
+  if (parentNode && parentNode !== global.document) {
+    return inDom(parentNode, dom2);
+  }
+  return false;
+}
 
 export default class Dragable {
   constructor(container, target, op = {}) {
@@ -17,13 +29,16 @@ export default class Dragable {
     this.target = target;
     Object.assign(this, defaultOp, op);
     this.init();
+    this.runTransform();
   }
   init() {
     this.container.setAttribute('draggable', 'false');
     this.container.style.userSelect = 'none';
+    this.container.style.cursor = 'move';
+
     this.target.setAttribute('draggable', 'false');
     this.target.style.cursor = 'move';
-    this.target.style.transformOrigin = 'left top';
+
     this.dragAttribute = {
       mouseDown: false,
       startX: null,
@@ -123,16 +138,6 @@ export default class Dragable {
       newY: mouseY - mouseDownY + startY,
     };
   }
-  inDom(dom, dom2) {
-    if (dom === dom2) {
-      return true;
-    }
-    const parentNode = dom.parentNode;
-    if (parentNode && parentNode !== global.document) {
-      return this.inDom(parentNode, dom2);
-    }
-    return false;
-  }
   mousewheel = (e) => {
     if (this.destroyed) {
       return;
@@ -140,27 +145,30 @@ export default class Dragable {
     if (this.zoomAble === false || this.wheelAble === false) {
       return;
     }
-    if (!this.inDom(e.target, this.target)) {
+    if (!inDom(e.target, this.container)) {
       return;
     }
 
     e.cancelBubble = true;
     e.stopPropagation();
+    e.preventDefault();
 
     if (this.lastWheel) { // 防抖
       if (Date.now() - this.lastWheel < 80) {
-        return;
+        return false;
       }
     }
     this.lastWheel = Date.now();
     if (e.deltaY < 0) {
-      this.zoomIn();
+      this.zoomIn(e);
     } else if (e.deltaY > 0) {
-      this.zoomOut();
+      this.zoomOut(e);
     } else {
-      return;
+      return false;
     }
     this.zoomHandle(this.warpEvent(e, 'zoom'));
+
+    return false;
   }
   mousemove = (e) => {
     if (this.destroyed) {
@@ -185,17 +193,29 @@ export default class Dragable {
     this.moveTo(newX, newY);
     this.dragingHandle(this.warpEvent(e, 'dragging'));
   }
-  zoomIn() {
-    this.zoomTo(parseInt(this.dragAttribute.zoom + this.zoomStep));
+  zoomIn(_e) {
+    let zoom = this.dragAttribute.zoom;
+    if (zoom > 1) {
+      zoom = parseInt(this.dragAttribute.zoom + this.zoomStep);
+    } else {
+      zoom = this.dragAttribute.zoom / this.zoomStepScale;
+    }
+    this.zoomTo(zoom, _e);
   }
-  zoomOut() {
-    this.zoomTo(parseInt(this.dragAttribute.zoom - this.zoomStep));
+  zoomOut(_e) {
+    let zoom = this.dragAttribute.zoom;
+    if (zoom > 1) {
+      zoom = parseInt(this.dragAttribute.zoom - this.zoomStep);
+    } else {
+      zoom = this.dragAttribute.zoom * this.zoomStepScale;
+    }
+    this.zoomTo(zoom, _e);
   }
-  zoomTo = (z = this.dragAttribute.zoom) => {
+  zoomTo = (z = this.dragAttribute.zoom, _e) => {
     if (this.destroyed) {
       return;
     }
-    if (this.dragAttribute.zoomAble === false || z <= 0) {
+    if (this.zoomAble === false || z <= 0) {
       return;
     }
     if (z < this.minZoom) {
@@ -204,39 +224,73 @@ export default class Dragable {
     if (z > this.maxZoom) {
       z = this.maxZoom;
     }
+
+    const oldZoom = this.dragAttribute.zoom;
     this.dragAttribute.zoom = z;
 
     const {
       x,
-      y
+      y,
     } = this.dragAttribute;
 
-    this.runTransform();
+    this.moveTo(x * z / oldZoom, y * z / oldZoom, _e);
   }
 
-  calcBoundary(value, boundary) {
+  calcBoundary(value, boundary, offset = 0) {
 
-    if (value * boundary < 0 || boundary === 0) {
+    const theValue = value - offset;
+
+    if (boundary === 0) {
       return 0;
     }
 
-    if (Math.abs(value) > Math.abs(boundary)) {
-      return boundary;
+    if (theValue * boundary < 0) {
+      return offset;
+    }
+
+    const theBoundary = boundary + offset;
+
+    if (Math.abs(value) > Math.abs(theBoundary)) {
+      return theBoundary;
     }
 
     return value;
   }
 
-  runTransform() {
+  runTransform(_e) {
     const {
       x,
       y,
       zoom
     } = this.dragAttribute;
-    this.target.style.transform = `matrix(${zoom},0,0,${zoom},${x},${y})`;
+
+    let {
+      offsetWidth: oX,
+      offsetHeight: oY,
+    } = this.container;
+
+    if (_e) {
+      const {
+        offsetX,
+        offsetY,
+        target,
+      } = _e;
+      // TODO
+    }
+
+    if (this.transformOrigin) {
+      this.target.style.transformOrigin = this.transformOrigin;
+    } else {
+      this.target.style.transformOrigin = `${oX / 2}px ${oY / 2}px`;
+    }
+
+    const zoomX = this.lockX === true ? 1 : zoom;
+    const zoomY = this.lockY === true ? 1 : zoom;
+
+    this.target.style.transform = `matrix(${zoomX},0,0,${zoomY},${x},${y})`;
   }
 
-  moveTo(x = this.dragAttribute.x, y = this.dragAttribute.y) {
+  moveTo(x = this.dragAttribute.x, y = this.dragAttribute.y, _e = null) {
     if (this.destroyed) {
       return;
     }
@@ -251,9 +305,13 @@ export default class Dragable {
       offsetHeight: targetHeight,
     } = this.target;
 
+    const zoom = this.dragAttribute.zoom;
+
     if (this.hasBoundary) {
-      x = this.calcBoundary(x, containerWidth - targetWidth * this.dragAttribute.zoom);
-      y = this.calcBoundary(y, containerHeight - targetHeight * this.dragAttribute.zoom);
+      const boundaryX = containerWidth - targetWidth * zoom;
+      x = this.calcBoundary(x, boundaryX, containerWidth * (zoom - 1) / 2);
+      const boundaryY = containerHeight - targetHeight * zoom;
+      y = this.calcBoundary(y, boundaryY, containerHeight * (zoom - 1) / 2);
     }
 
     const {
@@ -269,7 +327,7 @@ export default class Dragable {
       this.dragAttribute.y = y;
     }
 
-    this.runTransform();
+    this.runTransform(_e);
 
   }
   destroy() {
