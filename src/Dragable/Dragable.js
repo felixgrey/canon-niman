@@ -3,12 +3,14 @@ const defaultOp = {
   dragingHandle: Function.prototype,
   dragEndHandle: Function.prototype,
   zoomHandle: Function.prototype,
+  changeHandle: Function.prototype,
   zoomStep: 1,
   zoomStepScale: 0.5,
   maxZoom: 8,
   minZoom: 0.125,
   zoomAble: true,
   wheelAble: true,
+  dragAble: true,
   hasBoundary: false,
 };
 
@@ -31,7 +33,8 @@ export default class Dragable {
     this.init();
     this.runTransform();
   }
-  init() {
+  init(op) {
+    Object.assign(this, op);
     this.container.setAttribute('draggable', 'false');
     this.container.style.userSelect = 'none';
     this.container.style.cursor = 'move';
@@ -58,13 +61,12 @@ export default class Dragable {
 
     global.addEventListener('mousemove', this.mousemove, true);
     global.addEventListener('mouseup', this.mouseup, true);
+
+    if (op) {
+      this.revise();
+    }
   }
   warpEvent(e, name, merge = {}) {
-    const {
-      mouseX,
-      mouseY
-    } = this.getMouseXY(e);
-
     const {
       offsetWidth: containerWidth,
       offsetHeight: containerHeight,
@@ -167,7 +169,7 @@ export default class Dragable {
       return false;
     }
     this.zoomHandle(this.warpEvent(e, 'zoom'));
-
+    this.changeHandle(this.warpEvent(e, 'zoom'));
     return false;
   }
   mousemove = (e) => {
@@ -175,6 +177,9 @@ export default class Dragable {
       return;
     }
     if (!this.dragAttribute.mouseDown) {
+      return;
+    }
+    if (!this.dragAble) {
       return;
     }
 
@@ -192,6 +197,7 @@ export default class Dragable {
     } = this.calcMove();
     this.moveTo(newX, newY);
     this.dragingHandle(this.warpEvent(e, 'dragging'));
+    this.changeHandle(this.warpEvent(e, 'dragging'));
   }
   zoomIn(_e) {
     let zoom = this.dragAttribute.zoom;
@@ -290,9 +296,21 @@ export default class Dragable {
     this.target.style.transform = `matrix(${zoomX},0,0,${zoomY},${x},${y})`;
   }
 
-  moveTo(x = this.dragAttribute.x, y = this.dragAttribute.y, _e = null) {
+  revise() {
+    this.moveTo();
+    this.changeHandle(this.warpEvent(null, 'revise'));
+  }
+
+  moveTo(x, y, _e = null) {
     if (this.destroyed) {
       return;
+    }
+
+    if (x === null || x === undefined) {
+      x = this.dragAttribute.x;
+    }
+    if (y === null || y === undefined) {
+      y = this.dragAttribute.y;
     }
 
     const {
@@ -328,8 +346,32 @@ export default class Dragable {
     }
 
     this.runTransform(_e);
-
   }
+
+  getCurrentState() {
+    if (this.destroyed) {
+      return null;
+    }
+
+    const {
+      offsetWidth: containerWidth,
+      offsetHeight: containerHeight,
+    } = this.container;
+
+    const {
+      offsetWidth: targetWidth,
+      offsetHeight: targetHeight,
+    } = this.target;
+
+    return {
+      ...this.dragAttribute,
+      containerWidth,
+      containerHeight,
+      targetWidth,
+      targetHeight
+    };
+  }
+
   destroy() {
     if (this.destroyed) {
       return;
