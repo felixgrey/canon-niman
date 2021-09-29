@@ -45,7 +45,7 @@ async function importBMap(isGl = false) {
     searchParams.append('v', '3.0');
   }
 
-  script.src = `${location.protocol}//api.map.baidu.com/api?${searchParams}`;
+  script.src = `${theGlobal.location.protocol}//api.map.baidu.com/api?${searchParams}`;
   document.body.appendChild(script);
 
   return nextPromise;
@@ -53,4 +53,4 @@ async function importBMap(isGl = false) {
 
 importBMap.AK = null;
 importBMap.AK = '3zq2c5fIT48YHlvVGVd8ShkBqF8LafPW';
-// export default importBMap;
+export default importBMap;

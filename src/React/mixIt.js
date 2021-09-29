@@ -95,6 +95,8 @@ export default function mixIt(view) {
   }
   readOnlyProp(view, '_$mixed', true);
 
+  view.state = view.state || {};
+
   const oldComponentDidMount = view.componentDidMount || Function.prototype;
   view.componentDidMount = function(...args) {
     oldComponentDidMount.bind(this)(...args);

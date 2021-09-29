@@ -5,6 +5,7 @@ const defaultConfig = {
   rootField: 'root', // 是否是根
   leafField: 'leaf', // 是否是叶子
   pathField: 'path', // 路径
+  beforSet: a => a, // 格式化后存入数据前
 };
 
 function _mixConfig(config = {}) {
@@ -26,6 +27,7 @@ function _traceNode(item, config, parentMap = {}, parentPath = [], itemMap = new
     pathField,
     leafField,
     rootField,
+    beforSet,
   } = config;
 
   const pathItem = Object.assign({}, item);
@@ -48,6 +50,8 @@ function _traceNode(item, config, parentMap = {}, parentPath = [], itemMap = new
     [rootField]: _nvl(parentKey),
     [childrenField]: children,
   });
+
+  item = beforSet(item);
 
   itemMap.set(item[keyField], item);
 
@@ -89,18 +93,18 @@ function _infoRelationList(list = [], config) {
 
 function fromList(list = [], config) {
   config = _mixConfig(config);
-  const map = new Map();
+  const newMap = new Map();
   const newList = [];
   const tree = _infoRelationList(list, config).map(([keyValue, map]) => {
     for (let key of map.keys()) {
-      map.set(key, map.get(key));
+      newMap.set(key, map.get(key));
       newList.push(map.get(key));
     }
     return map.get(keyValue);
   });
 
   return {
-    map,
+    map: newMap,
     list: newList,
     tree,
   }
@@ -108,6 +112,30 @@ function fromList(list = [], config) {
 
 function fromTree(tree = {}, config) {
   config = _mixConfig(config);
+  if (Array.isArray(tree)) {
+    const newMap = new Map;
+    const newList = [];
+    const newTree = [];
+    tree.forEach($tree => {
+      const {
+        map,
+        list,
+        tree
+      } = fromTree($tree);
+      for (let [key, value] of map) {
+        newMap.set(key, value);
+      }
+      newList.push(list);
+      newTree.push(tree);
+    });
+
+    return {
+      map: newMap,
+      list: newList.flat(),
+      tree: newTree,
+    }
+  }
+
   const map = _traceNode(Object.assign({}, tree), config);
   const list = Array.from(map.values());
   const newTree = map.get(tree[config.keyField]);
