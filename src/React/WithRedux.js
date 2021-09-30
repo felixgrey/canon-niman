@@ -7,43 +7,44 @@ import {
 
 export default function createModel(config = {}) {
   const {
-    nameSpace = '',
+    name = '',
       defaultState = {},
       reducer = {},
       action = {},
   } = config;
-
+  let lastState = defaultState;
   const $defaultState = JSON.parse(JSON.stringify(defaultState));
-  const $nameSpace = nameSpace.replace(/^(\w)/, (a, b) => b.toLocaleUpperCase());
-  const setStateAction = 'set' + $nameSpace + 'State';
-  const resetStateAction = 'reset' + $nameSpace + 'State';
+  const $name = name.replace(/^(\w)/, (a, b) => b.toLocaleUpperCase());
+  const setStateAction = 'set' + $name + 'State';
+  const resetStateAction = 'reset' + $name + 'State';
 
   function theReducer(state = defaultState, action) {
     if (reducer[action.type]) {
       const result = reducer[action.type](state, action);
-      return {
+      lastState = {
         ...state,
         ...result,
       };
     }
     if (action.type === setStateAction) {
-      return {
+      lastState = {
         ...state,
         ...action.data,
       };
     }
     if (action.type === resetStateAction) {
-      return {
+      lastState = {
         ...$defaultState,
         ...action.data,
       };
     }
-    return state;
+    lastState = state;
+    return lastState;
   }
 
   function theMapState(state) {
     return {
-      [nameSpace + 'State']: state[nameSpace],
+      [name + 'State']: state[name],
     }
   };
 
@@ -57,11 +58,12 @@ export default function createModel(config = {}) {
     const newAction = {};
     for (let key in action) {
       const $key = key.replace(/^(\w)/, (a, b) => b.toLocaleUpperCase());
-      newAction[nameSpace + $key] = (...args) => {
+      newAction[name + $key] = (...args) => {
         return action[key]({
           args,
           setState,
-          dispatch
+          dispatch,
+          state: lastState,
         });
       }
     }
@@ -94,15 +96,15 @@ export default function createModel(config = {}) {
     }
   }
 
-  theConnect.nameSpace = nameSpace;
-  theMapState.nameSpace = nameSpace
-  theMapDispatch.nameSpace = nameSpace;
-  theReducer.nameSpace = nameSpace;
+  theConnect.name = name;
+  theMapState.name = name
+  theMapDispatch.name = name;
+  theReducer.name = name;
 
   return {
-    [nameSpace + 'Connect']: theConnect,
-    [nameSpace + 'MapState']: theMapState,
-    [nameSpace + 'MapDispatch']: theMapDispatch,
-    [nameSpace + 'Reducer']: theReducer,
+    [name + 'Connect']: theConnect,
+    [name + 'MapState']: theMapState,
+    [name + 'MapDispatch']: theMapDispatch,
+    [name + 'Reducer']: theReducer,
   };
 }
