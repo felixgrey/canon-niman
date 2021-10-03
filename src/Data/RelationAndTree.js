@@ -46,7 +46,7 @@ function _traceNode(item, config, parentMap = {}, parentPath = [], itemMap = new
   Object.assign(item, {
     [parentKeyField]: parentKey,
     [pathField]: path,
-    [leafField]: !!children,
+    [leafField]: !children,
     [rootField]: _nvl(parentKey),
     [childrenField]: children,
   });

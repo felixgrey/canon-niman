@@ -5,13 +5,32 @@ import {
   withRouter
 } from "react-router-dom";
 
-export default function createModel(config = {}) {
+export function mergeMapFuns(...funs) {
+  return (...args) => {
+    const result = {};
+    for (let fun of funs) {
+      Object.assign(result, fun(...args));
+    }
+    return result;
+  };
+}
+
+export function withRouterConnect(mapState = a => a, mapDispatch = a => ({})) {
+  return function(Class) {
+    return withRouter(connect(mapState, mapDispatch)(Class));
+  }
+}
+
+export default function createFunction(config = {}) {
   const {
-    name = '',
+    name = null,
       defaultState = {},
       reducer = {},
       action = {},
   } = config;
+  if (name === null || name === '') {
+    throw new Error('model must has name.');
+  }
   let lastState = defaultState;
   const $defaultState = JSON.parse(JSON.stringify(defaultState));
   const $name = name.replace(/^(\w)/, (a, b) => b.toLocaleUpperCase());
@@ -25,20 +44,19 @@ export default function createModel(config = {}) {
         ...state,
         ...result,
       };
-    }
-    if (action.type === setStateAction) {
+    } else if (action.type === setStateAction) {
       lastState = {
         ...state,
         ...action.data,
       };
-    }
-    if (action.type === resetStateAction) {
+    } else if (action.type === resetStateAction) {
       lastState = {
         ...$defaultState,
         ...action.data,
       };
+    } else {
+      lastState = state;
     }
-    lastState = state;
     return lastState;
   }
 
@@ -49,7 +67,7 @@ export default function createModel(config = {}) {
   };
 
   function theMapDispatch(dispatch) {
-    const setState = (data = {}) => {
+    function update(data = {}) {
       return dispatch({
         type: setStateAction,
         data,
@@ -61,7 +79,7 @@ export default function createModel(config = {}) {
       newAction[name + $key] = (...args) => {
         return action[key]({
           args,
-          setState,
+          update,
           dispatch,
           state: lastState,
         });
@@ -69,7 +87,7 @@ export default function createModel(config = {}) {
     }
     return {
       dispatch,
-      [setStateAction]: setState,
+      [setStateAction]: update,
       [resetStateAction]: (data = {}) => {
         return dispatch({
           type: resetStateAction,
@@ -81,25 +99,15 @@ export default function createModel(config = {}) {
   }
 
   function theConnect(mapState = a => a, mapDispatch = a => ({})) {
-    return function(Class) {
-      return withRouter(connect((state) => {
-        return {
-          ...theMapState(state),
-          ...mapState(state),
-        }
-      }, (dispatch) => {
-        return {
-          ...theMapDispatch(dispatch),
-          ...mapDispatch(dispatch),
-        }
-      })(Class));
-    }
+    return withRouterConnect(
+      mergeMapFuns(theMapState, mapState),
+      mergeMapFuns(theMapDispatch, mapDispatch));
   }
 
-  theConnect.name = name;
-  theMapState.name = name
-  theMapDispatch.name = name;
-  theReducer.name = name;
+  theConnect.$name = name;
+  theMapState.$name = name
+  theMapDispatch.$name = name;
+  theReducer.$name = name;
 
   return {
     [name + 'Connect']: theConnect,
