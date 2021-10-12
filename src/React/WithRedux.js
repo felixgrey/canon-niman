@@ -21,21 +21,35 @@ export function withRouterConnect(mapState = a => a, mapDispatch = a => ({})) {
   }
 }
 
+export function upperCaseFirst(text = '') {
+  return `${text}`.replace(/^(\w)/, (a, b) => b.toUpperCase());
+}
+
+export function waitTime(time = 20) {
+  return new Promise(r => setTimeout(r, time));
+}
+
 export default function createFunction(config = {}) {
   const {
     name = null,
       defaultState = {},
       reducer = {},
       action = {},
+      payloadField = 'payload',
   } = config;
   if (name === null || name === '') {
     throw new Error('model must has name.');
   }
   let lastState = defaultState;
   const $defaultState = JSON.parse(JSON.stringify(defaultState));
-  const $name = name.replace(/^(\w)/, (a, b) => b.toLocaleUpperCase());
-  const setStateAction = 'set' + $name + 'State';
-  const resetStateAction = 'reset' + $name + 'State';
+  const $name = upperCaseFirst(name);
+  const updateAction = name + 'Update';
+  const resetAction = name + 'Reset';
+  const loadingMap = new Map;
+
+  function getLastState() {
+    return lastState;
+  }
 
   function theReducer(state = defaultState, action) {
     if (reducer[action.type]) {
@@ -44,15 +58,15 @@ export default function createFunction(config = {}) {
         ...state,
         ...result,
       };
-    } else if (action.type === setStateAction) {
+    } else if (action.type === updateAction) {
       lastState = {
         ...state,
-        ...action.data,
+        ...action[payloadField],
       };
-    } else if (action.type === resetStateAction) {
+    } else if (action.type === resetAction) {
       lastState = {
         ...$defaultState,
-        ...action.data,
+        ...action[payloadField],
       };
     } else {
       lastState = state;
@@ -69,29 +83,66 @@ export default function createFunction(config = {}) {
   function theMapDispatch(dispatch) {
     function update(data = {}) {
       return dispatch({
-        type: setStateAction,
-        data,
+        type: updateAction,
+        [payloadField]: data,
       });
     };
+
+    function clearLoadingData(name) {
+      return loadingMap.delete(name);
+    }
+
+    async function loadOnce(name, callback) {
+      if (loadingMap.has(name)) {
+        return loadingMap.get(name);
+      }
+      const loadingName = name + 'Loading';
+      update({
+        [loadingName]: true,
+      });
+      const loadingPromise = new Promise((resolve, reject) => {
+        const $update = async function(data) {
+          update({
+            ...data,
+            [loadingName]: false,
+          });
+          await waitTime();
+          resolve(data);
+        }
+        callback({
+          $update,
+          getLastState,
+          clearLoadingData,
+        });
+      });
+
+      loadingMap.set(name, loadingPromise);
+      return loadingPromise;
+    }
+
     const newAction = {};
     for (let key in action) {
-      const $key = key.replace(/^(\w)/, (a, b) => b.toLocaleUpperCase());
+      const $key = upperCaseFirst(key);
       newAction[name + $key] = (...args) => {
         return action[key]({
           args,
           update,
           dispatch,
           state: lastState,
+          getLastState,
+          waitTime,
+          loadOnce,
+          clearLoadingData,
         });
       }
     }
     return {
       dispatch,
-      [setStateAction]: update,
-      [resetStateAction]: (data = {}) => {
+      [updateAction]: update,
+      [resetAction]: (data = {}) => {
         return dispatch({
-          type: resetStateAction,
-          data,
+          type: resetAction,
+          [payloadField]: data,
         });
       },
       ...newAction,
