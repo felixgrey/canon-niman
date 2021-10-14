@@ -17,15 +17,19 @@ const {
   xxxReducer,
 } = createFunction({
   name: 'xxx', // 模块名
-  defaultState: {}, // 初始状态
+  defaultState: { // 初始状态
+
+  },
   action: { // 自定义action
-    doSomething({update, args, state}) {
+    doSomething({dispatch, update, args, state, loadOnce, getLastState}) {
       console.log(args); // 所有参数
       console.log(state); // 当前状态
       update({}); // 更新状态
     }
   },
-  reducer: {}, // 自定义reducer
+  reducer: { // 自定义reducer
+    
+  }, 
 });
 
 /*

@@ -44,6 +44,8 @@ export default class AsyncComponent extends Component{
         tree
       } = this.props;
 
+      // console.log(context);
+
       const {
         hasMenu = false, // 显示导航菜单
         hasHeader = false,
@@ -77,7 +79,7 @@ export default class AsyncComponent extends Component{
       return (<div className="app-saas-platform">
         <TheHeader></TheHeader>
         <div className="app-page-container">
-          <Component {...this.props} >
+          <Component {...this.props} routerConfig={tree} >
             {this.props.children}
           </Component>
         </div>

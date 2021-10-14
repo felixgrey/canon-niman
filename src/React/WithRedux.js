@@ -21,12 +21,12 @@ export function withRouterConnect(mapState = a => a, mapDispatch = a => ({})) {
   }
 }
 
-export function upperCaseFirst(text = '') {
-  return `${text}`.replace(/^(\w)/, (a, b) => b.toUpperCase());
+export function waitTime(t = 0) {
+  return new Promise(r => setTimeout(r, t));
 }
 
-export function waitTime(time = 20) {
-  return new Promise(r => setTimeout(r, time));
+export function upperCaseFirst(text = '') {
+  return `${text}`.replace(/^(\w)/, (a, b) => b.toUpperCase());
 }
 
 export default function createFunction(config = {}) {
@@ -45,7 +45,8 @@ export default function createFunction(config = {}) {
   const $name = upperCaseFirst(name);
   const updateAction = name + 'Update';
   const resetAction = name + 'Reset';
-  const loadingMap = new Map;
+  const namedState = name + 'State';
+  const loadingMap = new Map();
 
   function getLastState() {
     return lastState;
@@ -76,7 +77,7 @@ export default function createFunction(config = {}) {
 
   function theMapState(state) {
     return {
-      [name + 'State']: state[name],
+      [namedState]: state[namedState],
     }
   };
 
@@ -88,8 +89,17 @@ export default function createFunction(config = {}) {
       });
     };
 
-    function clearLoadingData(name) {
-      return loadingMap.delete(name);
+    function deleteLoadedData(...names) {
+      const deleted = names.map(name => {
+        if (loadingMap.has(name)) {
+          loadingMap.get(name).cancelResolve();
+        }
+        loadingMap.delete(name)
+      });
+      if (names.length <= 1) {
+        return deleted[0];
+      }
+      return deleted;
     }
 
     async function loadOnce(name, callback) {
@@ -100,39 +110,56 @@ export default function createFunction(config = {}) {
       update({
         [loadingName]: true,
       });
-      const loadingPromise = new Promise((resolve, reject) => {
+      let onCancel = Function.prototype;
+      let cancelResolve;
+      let loadingPromise;
+      let done = false;
+      loadingPromise = new Promise((resolve, reject) => {
+        cancelResolve = () => {
+          resolve(onCancel());
+        };
         const $update = async function(data) {
+          if (done || loadingPromise !== loadingMap.get(name)) {
+            return;
+          }
+          done = true;
+          onCancel = Function.prototype;
           update({
             ...data,
             [loadingName]: false,
           });
-          await waitTime();
           resolve(data);
         }
         callback({
           $update,
           getLastState,
-          clearLoadingData,
+          deleteLoadedData,
+          setOnCancel: (callback) => {
+            onCancel = callback;
+          },
+          waitTime,
         });
       });
-
+      loadingPromise.cancelResolve = cancelResolve;
       loadingMap.set(name, loadingPromise);
       return loadingPromise;
     }
 
     const newAction = {};
+    const myAction = {};
     for (let key in action) {
       const $key = upperCaseFirst(key);
-      newAction[name + $key] = (...args) => {
+      myAction[key] = newAction[name + $key] = (...args) => {
         return action[key]({
           args,
           update,
           dispatch,
           state: lastState,
           getLastState,
-          waitTime,
           loadOnce,
-          clearLoadingData,
+          deleteLoadedData,
+          waitTime,
+          myAction,
         });
       }
     }
@@ -155,10 +182,7 @@ export default function createFunction(config = {}) {
       mergeMapFuns(theMapDispatch, mapDispatch));
   }
 
-  theConnect.$name = name;
-  theMapState.$name = name
-  theMapDispatch.$name = name;
-  theReducer.$name = name;
+  theReducer.$name = namedState;
 
   return {
     [name + 'Connect']: theConnect,

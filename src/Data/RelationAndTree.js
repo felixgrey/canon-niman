@@ -5,7 +5,8 @@ const defaultConfig = {
   rootField: 'root', // 是否是根
   leafField: 'leaf', // 是否是叶子
   pathField: 'path', // 路径
-  beforSet: a => a, // 格式化后存入数据前
+  rootParentKey: null, // 根节点的父ID值
+  beforeSet: a => a, // 格式化后存入数据前
 };
 
 function _mixConfig(config = {}) {
@@ -27,49 +28,52 @@ function _traceNode(item, config, parentMap = {}, parentPath = [], itemMap = new
     pathField,
     leafField,
     rootField,
-    beforSet,
+    beforeSet,
+    rootParentKey,
   } = config;
 
+  item = Object.assign({}, item);
   const pathItem = Object.assign({}, item);
 
   delete pathItem[parentKeyField];
   delete pathItem[childrenField];
 
   const parentKey = (parentPath[parentPath.length - 1] || {
-    [keyField]: null
+    [keyField]: rootParentKey,
   })[keyField];
 
   const path = parentPath.concat(pathItem);
-  const keyValue = item[keyField];
-  const children = parentMap[keyValue] || item[childrenField] || null;
 
   Object.assign(item, {
     [parentKeyField]: parentKey,
     [pathField]: path,
-    [leafField]: !children,
-    [rootField]: _nvl(parentKey),
-    [childrenField]: children,
+    [rootField]: _nvl(parentKey) || parentKey === rootParentKey,
   });
 
-  item = beforSet(item);
+  beforeSet(item);
 
-  itemMap.set(item[keyField], item);
+  const keyValue = item[keyField];
+  const children = parentMap[keyValue] || item[childrenField] || null;
+  item[childrenField] = children;
+  item[leafField] = !children;
+
+  itemMap.set(keyValue, item);
 
   if (item[childrenField]) {
     item[childrenField] = item[childrenField].map(item2 => {
-      const item3 = Object.assign({}, item2);
-      _traceNode(item3, config, parentMap, path, itemMap);
-      return item3;
+      const [, newItem2] = _traceNode(item2, config, parentMap, path, itemMap);
+      return newItem2;
     });
   }
 
-  return itemMap;
+  return [itemMap, item];
 };
 
 function _infoRelationList(list = [], config) {
   const {
     keyField,
     parentKeyField,
+    rootParentKey,
   } = (config = _mixConfig(config));
 
   const rootNodes = [];
@@ -77,18 +81,25 @@ function _infoRelationList(list = [], config) {
 
   for (let item of list) {
     const parentKey = item[parentKeyField];
-    const item2 = Object.assign({}, item);
 
-    if (_nvl(parentKey)) {
-      rootNodes.push(item2);
+    if (_nvl(parentKey) || parentKey === rootParentKey) {
+      rootNodes.push(item);
     } else {
-      (parentMap[parentKey] = parentMap[parentKey] || []).push(item2);
+      (parentMap[parentKey] = parentMap[parentKey] || []).push(item);
     }
   }
 
   return rootNodes.map(item => {
-    return [item[keyField], _traceNode(item, config, parentMap)];
+    return [item[keyField], _traceNode(item, config, parentMap)[0]];
   });
+}
+
+function mapToObj(map) {
+  const obj = {};
+  for (let [key, value] of map) {
+    obj[key] = value;
+  }
+  return obj;
 }
 
 function fromList(list = [], config) {
@@ -107,13 +118,14 @@ function fromList(list = [], config) {
     map: newMap,
     list: newList,
     tree,
+    object: mapToObj(newMap),
   }
 }
 
 function fromTree(tree = {}, config) {
   config = _mixConfig(config);
   if (Array.isArray(tree)) {
-    const newMap = new Map;
+    const newMap = new Map();
     const newList = [];
     const newTree = [];
     tree.forEach($tree => {
@@ -121,7 +133,7 @@ function fromTree(tree = {}, config) {
         map,
         list,
         tree
-      } = fromTree($tree);
+      } = fromTree($tree, config);
       for (let [key, value] of map) {
         newMap.set(key, value);
       }
@@ -133,10 +145,11 @@ function fromTree(tree = {}, config) {
       map: newMap,
       list: newList.flat(),
       tree: newTree,
+      object: mapToObj(newMap),
     }
   }
 
-  const map = _traceNode(Object.assign({}, tree), config);
+  const map = _traceNode(tree, config)[0];
   const list = Array.from(map.values());
   const newTree = map.get(tree[config.keyField]);
 
@@ -144,6 +157,7 @@ function fromTree(tree = {}, config) {
     map,
     list,
     tree: newTree,
+    object: mapToObj(map),
   }
 }
 
